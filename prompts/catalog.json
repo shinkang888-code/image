@@ -34,6 +34,115 @@
         ]
       }
     },
+    "product": {
+      "_note": "LEXI 커머스 상품컷 — 누끼/스튜디오. PDP 히어로 이미지 공급용",
+      "quality_suffix": "photorealistic product photography, commercial e-commerce quality, true-to-life color, sharp focus, high detail, 8k",
+      "negative": "lowres, blurry, jpeg artifacts, watermark, text, signature, logo, brand name, duplicated product, floating product, harsh reflections, cartoon, cgi, plastic looking",
+      "template": "product photography of {subject}, {surface}, {lighting}, {angle}",
+      "axes": {
+        "subject": [
+          "a skincare serum bottle with a dropper",
+          "a cushion compact case, open",
+          "a lip tint tube",
+          "a folded knit cardigan",
+          "a leather crossbody bag",
+          "a pair of low-top sneakers",
+          "a hair ampoule set of three vials",
+          "a ceramic reed diffuser bottle"
+        ],
+        "surface": [
+          "on a seamless white backdrop",
+          "on a pale beige paper sweep",
+          "on a brushed steel plinth",
+          "on a glossy acrylic riser"
+        ],
+        "lighting": [
+          "soft diffused softbox light",
+          "crisp directional light with a defined shadow",
+          "gradient rim light on a gray background"
+        ],
+        "angle": [
+          "straight-on at eye level, centered",
+          "45 degree three-quarter view",
+          "top-down flat lay"
+        ]
+      }
+    },
+    "detail": {
+      "_note": "매크로 디테일컷 — PDP 하단 소재·마감 블록용",
+      "quality_suffix": "macro product photography, commercial e-commerce quality, true-to-life color, extreme detail, 8k",
+      "negative": "lowres, blurry, jpeg artifacts, watermark, text, signature, logo, brand name, cartoon, cgi, plastic looking, oversharpened halo",
+      "template": "macro detail shot of {subject}, {framing}, {lighting}",
+      "axes": {
+        "subject": [
+          "the woven texture of a knit sweater",
+          "the stitching along a leather bag strap",
+          "the pump nozzle of a serum bottle",
+          "the pressed powder surface of a compact",
+          "the tread pattern of a sneaker sole",
+          "the clasp of a gold plated necklace"
+        ],
+        "framing": [
+          "extreme macro, shallow depth of field",
+          "close crop filling the frame"
+        ],
+        "lighting": [
+          "raking side light revealing texture",
+          "soft even light, true color",
+          "warm directional light with soft falloff"
+        ]
+      }
+    },
+    "lifestyle": {
+      "_note": "연출·사용장면컷 — 홈 배너·카드뉴스·릴스 배경용",
+      "quality_suffix": "photorealistic lifestyle product photography, editorial commercial quality, natural color, sharp focus, 8k",
+      "negative": "lowres, blurry, jpeg artifacts, watermark, text, signature, logo, brand name, cluttered background, cartoon, cgi, plastic looking",
+      "template": "{subject} {scene}, {lighting}",
+      "axes": {
+        "subject": [
+          "a skincare serum bottle",
+          "a cushion compact",
+          "a leather crossbody bag",
+          "a folded knit cardigan"
+        ],
+        "scene": [
+          "on a marble bathroom counter beside folded towels",
+          "on a linen covered vanity",
+          "on a wooden cafe table next to a coffee cup",
+          "resting in an open tote bag on a bed",
+          "on a windowsill with sheer curtains"
+        ],
+        "lighting": [
+          "warm morning sunlight",
+          "soft overcast daylight",
+          "golden hour glow"
+        ]
+      }
+    },
+    "model": {
+      "_note": "착용컷 — 얼굴은 프레임 밖으로 크롭(초상권·동일인물 일관성 회피). 카탈로그 관례",
+      "quality_suffix": "photorealistic fashion catalog photography, editorial commercial quality, natural skin tone, sharp focus, 8k",
+      "negative": "lowres, blurry, jpeg artifacts, watermark, text, signature, logo, brand name, extra fingers, malformed hands, mannequin seams, cartoon, cgi",
+      "template": "an adult model wearing {garment}, {crop}, {setting}",
+      "axes": {
+        "garment": [
+          "an oversized knit cardigan",
+          "a pleated midi skirt",
+          "a linen blazer",
+          "a crossbody bag over the shoulder"
+        ],
+        "crop": [
+          "waist-up crop, face out of frame",
+          "full body, head cropped above the frame",
+          "detail crop on the garment only"
+        ],
+        "setting": [
+          "against a neutral studio backdrop",
+          "on a sunlit city street with a blurred background",
+          "in a minimal interior with warm wood"
+        ]
+      }
+    },
     "web": {
       "template": "{subject}, {treatment}, {lighting}",
       "axes": {

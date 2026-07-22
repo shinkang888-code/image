@@ -26,6 +26,7 @@ class Config:
     takes: int = 1              # 프롬프트당 시드 변주 장수 (voicebox takes)
     retries: int = 1            # 생성 실패 재시도 횟수
     dashboard_port: int = 8787
+    service_port: int = 8788    # 외부 앱 생성 요청 창구 (service.py) — 대시보드 8787 옆
     profile: GpuProfile = field(default_factory=GpuProfile)
     output: OutputSpec = field(default_factory=OutputSpec)
 
@@ -63,6 +64,7 @@ def load_config(path: str | Path | None = None) -> Config:
     cfg.takes = int(_env("TAKES") or factory.get("takes", cfg.takes))
     cfg.retries = int(_env("RETRIES") or factory.get("retries", cfg.retries))
     cfg.dashboard_port = int(_env("DASHBOARD_PORT") or factory.get("dashboard_port", cfg.dashboard_port))
+    cfg.service_port = int(_env("SERVICE_PORT") or factory.get("service_port", cfg.service_port))
 
     engine = (_env("ENGINE") or gpu.get("engine") or "sdxl").lower()
     if engine == "gguf":

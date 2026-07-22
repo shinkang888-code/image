@@ -39,6 +39,10 @@ def load_catalog(path: str | Path | None = None) -> dict:
 def _expand_set(name: str, spec: dict, quality: str, negative: str) -> Iterable[Prompt]:
     template: str = spec["template"]
     axes: dict[str, list[str]] = spec["axes"]
+    # set 단위 오버라이드 — 도메인마다 화질어·네거티브가 다르다
+    # (인테리어의 'natural materials' 가 상품컷에는 해로운 식).
+    quality = spec.get("quality_suffix", quality)
+    negative = spec.get("negative", negative)
     keys = list(axes.keys())
     for combo in itertools.product(*(axes[k] for k in keys)):
         filled = template.format(**dict(zip(keys, combo)))

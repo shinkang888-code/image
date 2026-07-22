@@ -42,8 +42,18 @@ def _doctor_models(cfg, client: ComfyClient) -> list[str]:
     issues: list[str] = []
     p = cfg.profile
     if p.engine == "gguf":
+        # /models/unet 은 버전별 404 — UnetLoaderGGUF object_info 로 확인
+        try:
+            info = client._get_json("/object_info/UnetLoaderGGUF")
+            names = info.get("UnetLoaderGGUF", {}).get("input", {}).get("required", {}).get("unet_name", [[]])[0]
+            basenames = {Path(str(x)).name for x in names}
+            if p.unet in basenames:
+                print(f"  ✓ UnetLoaderGGUF/{p.unet}")
+            else:
+                issues.append(f"누락: GGUF unet={p.unet} (로드 가능: {sorted(basenames)[:5]})")
+        except Exception as ex:
+            issues.append(f"UnetLoaderGGUF 조회 실패 — ComfyUI-GGUF 커스텀노드 확인 ({ex})")
         checks = [
-            ("unet", p.unet),
             ("text_encoders", p.clip),
             ("vae", p.vae),
         ]
@@ -54,7 +64,6 @@ def _doctor_models(cfg, client: ComfyClient) -> list[str]:
         if names is None:
             issues.append(f"모델 목록 조회 실패(/models/{folder}) — ComfyUI 버전 확인")
             continue
-        # basename 또는 상대경로로 매칭
         basenames = {Path(x).name for x in names}
         if name not in basenames and name not in names:
             issues.append(f"누락: models/{folder}/{name}")
@@ -230,6 +239,44 @@ def cmd_dashboard(args) -> int:
     return 0
 
 
+def cmd_serve(args) -> int:
+    """생성 서비스 — 외부 앱(LEXI Studio)이 이미지를 주문하는 HTTP 창구."""
+    from .service import GenerationService, serve_service
+
+    cfg = load_config(args.config)
+    if args.quality:
+        cfg.quality = True
+    port = args.port or cfg.service_port
+
+    mock = args.dry_run
+    if not mock:
+        reg = _registry(cfg)
+        engines = _online_engines(cfg, reg)
+        if not engines:
+            if args.strict:
+                print("온라인 Compute Node 없음. ComfyUI 기동 후 재시도(--dry-run 으로 모의 가동).",
+                      file=sys.stderr)
+                return 1
+            print("! 온라인 노드 없음 → mock 엔진으로 기동 (규칙3 graceful). "
+                  "실사 생성하려면 ComfyUI 기동 후 재시작.")
+            mock = True
+        else:
+            print(f"엔진: {engines[0][0]} ({len(engines)} node online)")
+
+    service = GenerationService(cfg, mock=mock)
+    h = service.health()
+    print(f"LIP 생성 서비스 — engine={h['engine']} model={h['model']} "
+          f"{'MOCK' if mock else 'LIVE'}")
+    print(f"  POST http://localhost:{port}/api/generate  {{prompt, seed?, negative?, tag?}}")
+    print(f"  GET  http://localhost:{port}/api/health")
+    print(f"→ LEXI 쪽 설정:  LIP_SERVICE_URL=http://localhost:{port}   (Ctrl+C 종료)")
+    try:
+        serve_service(service, port, block=True)
+    except KeyboardInterrupt:
+        pass
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     # Windows cp949 콘솔에서도 상태 문자(—, →, ●)가 깨지지 않게
     for stream in (sys.stdout, sys.stderr):
@@ -279,6 +326,13 @@ def main(argv: list[str] | None = None) -> int:
 
     db = sub.add_parser("dashboard", help="읽기 전용 대시보드 서버")
     db.set_defaults(func=cmd_dashboard)
+
+    sv = sub.add_parser("serve", help="생성 서비스 (외부 앱이 이미지 주문 — LEXI Studio 연동)")
+    sv.add_argument("--port", type=int, default=None)
+    sv.add_argument("--dry-run", action="store_true", help="GPU 없이 Mock 엔진")
+    sv.add_argument("--strict", action="store_true", help="노드 오프라인이면 mock 폴백 없이 종료")
+    sv.add_argument("--quality", action="store_true", help="ESRGAN 고화질 모드")
+    sv.set_defaults(func=cmd_serve)
 
     args = ap.parse_args(argv)
     return args.func(args)

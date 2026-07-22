@@ -72,7 +72,41 @@ python -m lip run --count 200 --tag interior  # 200장 연속 생성 → out/
 python -m lip run --dashboard                 # 작업제어 대시보드와 함께 공장 가동
 python -m lip run --quality --takes 3         # ESRGAN 고화질 + 프롬프트당 3장 변주
 python -m lip run --dry-run --count 5          # GPU 없이 Mock 엔진으로 파이프라인 검증
+python -m lip serve                            # 생성 서비스(외부 앱 주문 창구) — 아래 참조
 ```
+
+### 프롬프트 세트
+
+| tag | 조합 | 용도 |
+|---|---:|---|
+| `product` | 288 | 커머스 상품컷 — 누끼/스튜디오, PDP 히어로 |
+| `detail` | 36 | 매크로 디테일컷 — 소재·마감 블록 |
+| `lifestyle` | 60 | 연출·사용장면 — 홈 배너·카드뉴스·릴스 배경 |
+| `model` | 36 | 착용컷 — 얼굴은 프레임 밖 크롭(카탈로그 관례) |
+| `interior` | 432 | 인테리어 실사 |
+| `web` | 72 | 웹 배경·배너 |
+
+set 마다 `quality_suffix`·`negative` 를 따로 둘 수 있다(없으면 전역값). 인테리어의
+`natural materials` 같은 화질어가 상품컷에 새지 않게 하는 장치다.
+
+### LEXI Studio 연동 — 생성 서비스
+
+```bash
+python -m lip serve                 # 기본 8788. 노드 오프라인이면 mock 으로 graceful 기동
+python -m lip serve --strict        # 실 GPU 없으면 기동 거부
+python -m lip serve --dry-run       # 강제 mock
+```
+
+| 라우트 | 설명 |
+|---|---|
+| `GET /api/health` | 엔진·모델·노드 상태 (프로바이더 선택 판단용) |
+| `POST /api/generate` | `{prompt, seed?, negative?, tag?}` → 이미지 1장 생성 |
+| `GET /img/<id>/<file>` | 생성물 (`image.webp` / `image.jpg`) |
+
+LEXI(lexistyle) 쪽에 `LIP_SERVICE_URL=http://localhost:8788` 을 넣으면
+`src/lib/images/providers/lip.ts` 가 이 창구로 주문하고, 받은 이미지를
+`optimizeAndStore` 가 내려받아 PDP 파이프라인에 태운다. 같은 (프롬프트, 시드)는
+캐시 히트로 다시 굽지 않는다. GPU 는 프로세스 락으로 직렬화된다.
 
 ### 작업제어 대시보드 (LinkNode 이식)
 ```bash
@@ -107,6 +141,7 @@ lip/
   workflow.py     SDXL + GGUF(Krea) 그래프 빌더
   comfy_client.py ComfyUI HTTP + Mock
   factory.py      GPU 직렬 ∥ CPU 워커풀
+  service.py      생성 서비스 HTTP 창구 (LEXI Studio 연동)
   jobs.py / dashboard.py / nodes.py
 scripts/
   start-comfy.ps1 ComfyUI 기동

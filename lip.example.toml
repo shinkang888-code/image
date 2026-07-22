@@ -12,6 +12,7 @@ base_seed = 0
 takes = 1
 retries = 1
 dashboard_port = 8787
+service_port = 8788             # 생성 서비스(LEXI Studio 주문 창구) — python -m lip serve
 # catalog = "prompts/catalog.json"
 
 # --- 엔진 선택 ---
