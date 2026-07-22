@@ -1,0 +1,27 @@
+# LIP 설정 예시 — 복사해서 lip.toml 로 저장. 파일이 없어도 내장 기본값으로 동작한다.
+# 환경변수(LIP_COMFY_HOST 등)가 파일보다 우선.
+
+[comfy]
+host = "127.0.0.1:8188"        # ComfyUI 주소
+
+[factory]
+out_dir = "out"
+workers = 4                     # CPU 인코딩 병렬도 (GPU 는 항상 직렬 1)
+formats = ["webp", "jpg"]       # 요구: 가장 작은 웹포맷 + jpg
+base_seed = 0
+# catalog = "lip/prompts/catalog.json"   # 커스텀 프롬프트 카탈로그 경로
+
+[gpu]                           # 8GB + SDXL-Lightning 기본값
+checkpoint = "sdxl_lightning_6step.safetensors"
+width = 1344                    # SDXL 16:9 네이티브 (~1MP)
+height = 768
+steps = 6
+cfg = 2.0
+sampler = "euler"
+scheduler = "sgm_uniform"
+
+[output]
+target = [1920, 1080]           # FHD
+webp_quality = 80
+webp_method = 6                 # 0(빠름)~6(최소용량)
+jpg_quality = 82
