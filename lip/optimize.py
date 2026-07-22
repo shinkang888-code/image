@@ -43,6 +43,16 @@ def cover_resize(img: Image.Image, target: tuple[int, int] = FHD) -> Image.Image
     return resized.crop((left, top, left + tw, top + th))
 
 
+def avif_available() -> bool:
+    """Pillow(+플러그인)가 AVIF 저장을 지원하는지. 미지원이면 plant 는 webp/jpg 폴백."""
+    try:
+        buf = io.BytesIO()
+        Image.new("RGB", (8, 8), (0, 0, 0)).save(buf, format="AVIF", quality=40)
+        return len(buf.getvalue()) > 0
+    except Exception:
+        return False
+
+
 def _encode(img: Image.Image, fmt: str, spec: OutputSpec,
             xmp: bytes | None = None) -> EncodedImage:
     buf = io.BytesIO()

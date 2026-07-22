@@ -16,12 +16,12 @@ from pathlib import Path
 from PIL import Image
 
 from . import naming, seo, watermark
-from .optimize import OutputSpec, optimize
+from .optimize import OutputSpec, avif_available, optimize
 
 #: 20인치 화면 기준. 1600x900 이 실사용 상한이고 그 이상은 대역폭 낭비다.
 WEB_TARGET = (1600, 900)
-#: AVIF 우선 — 실측 동일 화질에서 WebP 의 약 70%. WebP 는 폴백.
-WEB_FORMATS = ("avif", "webp")
+#: AVIF 우선(가능 시). 이 PC Pillow 미지원이면 webp+jpg 로 천재병렬 유지.
+WEB_FORMATS = ("avif", "webp") if avif_available() else ("webp", "jpg")
 
 
 @dataclass

@@ -12,12 +12,16 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# Prefer new venv install; fall back to portable embed if it works
+# Prefer new venv install; fall back to portable embed if D: exists
 $venvPy = Join-Path $ComfyRoot "venv\Scripts\python.exe"
 $main = Join-Path $ComfyRoot "main.py"
 $portableRoot = "D:\ComfyUI_windows_portable"
-$portablePy = Join-Path $portableRoot "python_embeded\python.exe"
-$portableMain = Join-Path $portableRoot "ComfyUI\main.py"
+$portablePy = $null
+$portableMain = $null
+if (Test-Path "D:\") {
+    $portablePy = Join-Path $portableRoot "python_embeded\python.exe"
+    $portableMain = Join-Path $portableRoot "ComfyUI\main.py"
+}
 
 $py = $null
 $workDir = $null
@@ -27,8 +31,8 @@ if ((Test-Path $venvPy) -and (Test-Path $main)) {
     $py = $venvPy
     $workDir = $ComfyRoot
     $mainPath = $main
-} elseif ((Test-Path $portablePy) -and (Test-Path $portableMain)) {
-    # smoke-check portable python
+} elseif ((Test-Path "D:\") -and (Test-Path $portablePy) -and (Test-Path $portableMain)) {
+    # smoke-check portable python (이 PC에는 D: 없을 수 있음)
     try {
         $p = Start-Process -FilePath $portablePy -ArgumentList @("-c", "print(1)") -WorkingDirectory $portableRoot `
             -Wait -PassThru -WindowStyle Hidden `
