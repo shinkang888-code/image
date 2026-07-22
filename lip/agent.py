@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import os
 import queue
@@ -12,6 +13,9 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
+from PIL import Image
+
+from . import library
 from .comfy_client import ComfyClient, MockComfyClient
 from .config import load_config
 from .factory import Factory
@@ -19,10 +23,11 @@ from .jobs import GenJob, JobStore
 from .manifest import Manifest
 from .meta import build_meta, write_sidecar
 from .nodes import NodeRegistry, ensure_default_node
-from .optimize import optimize
 from .prompts import Prompt, load_prompts
 from .taxonomy import Quota, alloc, catalog_tag_for
 from .workflow import build_workflow
+
+_IMG_EXTS = {".avif", ".webp", ".jpg", ".jpeg", ".png"}
 
 
 DEFAULT_IPLANT = Path(os.environ.get("IPLANT_ROOT", r"C:\cursor\ipplant"))
@@ -72,6 +77,7 @@ def upsert_asset(payload: dict) -> None:
 
 
 def write_inventory(root: Path) -> dict:
+    """카테고리/소분류별 장수. lex_*.webp|avif 와 구형 image.webp 모두 센다."""
     lib = root / "library"
     stats: dict[str, dict[str, int]] = {}
     if lib.exists():
@@ -81,8 +87,17 @@ def write_inventory(root: Path) -> dict:
             for sub in sorted(cat_dir.glob("*")):
                 if not sub.is_dir():
                     continue
-                n = sum(1 for _ in sub.rglob("image.webp"))
-                stats.setdefault(cat_dir.name, {})[sub.name] = n
+                # 파일당 1장 — 같은 자산의 avif/webp 쌍은 stem 기준으로 묶는다.
+                stems: set[str] = set()
+                for p in sub.rglob("*"):
+                    if not p.is_file() or p.suffix.lower() not in _IMG_EXTS:
+                        continue
+                    stem = p.stem
+                    # lex_slug-01-web.avif / .webp → 동일 자산
+                    if stem.endswith("-web") or stem.endswith("-hero"):
+                        stem = stem.rsplit("-", 1)[0]
+                    stems.add(stem)
+                stats.setdefault(cat_dir.name, {})[sub.name] = len(stems)
     report = {"updated_at": time.time(), "stats": stats, "root": str(root)}
     out = root / "reports" / "inventory.json"
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -145,16 +160,24 @@ class CategoryFactory(Factory):
                 assert isinstance(task, _CatTask)
                 job = task.job
                 self.store.mark(job.id, "optimizing")
-                encoded = optimize(task.raw, self.cfg.output, self.cfg.formats)
-                task.dest.mkdir(parents=True, exist_ok=True)
-                files: list[str] = []
-                webp_bytes = 0
-                for e in encoded:
-                    fp = task.dest / f"image.{e.fmt}"
-                    fp.write_bytes(e.data)
-                    files.append(str(fp))
-                    if e.fmt == "webp":
-                        webp_bytes = e.bytes_len
+                img = Image.open(io.BytesIO(task.raw)).convert("RGB")
+                # 워터마크·XMP·lex_ 파일명 — library 가 단일 진입점 (명세 a364a6e)
+                rec = library.save_asset(
+                    img,
+                    root=self.ipplant_root,
+                    category=task.quota.category,
+                    subcategory=task.quota.subcategory,
+                    prompt=task.positive,
+                    negative=task.negative,
+                    prompt_id=job.prompt_id,
+                    seed=job.seed,
+                    engine=task.engine,
+                    index=None,
+                )
+                library.append_manifest(self.ipplant_root, rec)
+                files = list(rec.files.values())
+                primary = Path(rec.files.get("webp") or rec.files.get("avif") or files[0])
+                dest_dir = primary.parent
                 meta = build_meta(
                     category=task.quota.category,
                     subcategory=task.quota.subcategory,
@@ -162,19 +185,16 @@ class CategoryFactory(Factory):
                     positive=task.positive,
                     negative=task.negative,
                     seed=job.seed,
-                    local_path=str(task.dest),
+                    local_path=str(primary),
                     engine=task.engine,
-                    width=int(self.cfg.output.target[0]),
-                    height=int(self.cfg.output.target[1]),
+                    width=rec.width,
+                    height=rec.height,
                 )
-                write_sidecar(task.dest, meta)
+                write_sidecar(dest_dir, meta)
                 self.manifest.record(job.prompt_id, job.seed, job.tag, files)
-                total = sum(Path(f).stat().st_size for f in files if Path(f).exists())
+                total = sum(rec.bytes.values())
                 self.store.mark(job.id, "done", files=files, bytes_total=total)
-                sha = None
-                webp = task.dest / "image.webp"
-                if webp.exists():
-                    sha = hashlib.sha256(webp.read_bytes()).hexdigest()
+                sha = hashlib.sha256(primary.read_bytes()).hexdigest() if primary.exists() else None
                 upsert_asset({
                     "id": f"{job.prompt_id}-{job.seed}",
                     "prompt_id": job.prompt_id,
@@ -182,10 +202,10 @@ class CategoryFactory(Factory):
                     "subcategory": task.quota.subcategory,
                     "tag": job.tag,
                     "seed": job.seed,
-                    "width": int(self.cfg.output.target[0]),
-                    "height": int(self.cfg.output.target[1]),
-                    "bytes_webp": webp_bytes,
-                    "local_path": str(task.dest),
+                    "width": rec.width,
+                    "height": rec.height,
+                    "bytes_webp": rec.bytes.get("webp", 0),
+                    "local_path": str(primary),
                     "sha256": sha,
                     "prompt_full": task.positive,
                     "negative": task.negative,
@@ -195,7 +215,8 @@ class CategoryFactory(Factory):
                 })
                 with self._lock:
                     self.done += 1
-                    self.log(f"  [{self.done}] {task.quota.key}/{job.prompt_id}")
+                    name = primary.name
+                    self.log(f"  [{self.done}] {task.quota.key}/{name}")
             except Exception as ex:
                 if task is not None and isinstance(task, _CatTask):
                     self.store.mark(task.job.id, "failed", error=str(ex))
@@ -218,8 +239,8 @@ class CategoryFactory(Factory):
                 while self.store.is_paused and not self.store.should_stop:
                     threading.Event().wait(0.2)
                 seed = self.cfg.base_seed + i
-                dest = (self.ipplant_root / "library" / quota.category /
-                        quota.subcategory / p.id)
+                # dest 는 library.save_asset 이 slug 경로로 결정. 여기선 카테고리 힌트만.
+                dest = self.ipplant_root / "library" / quota.category / quota.subcategory
                 if self.manifest.has(p.id, seed):
                     continue
                 node_name, client = self._pick_engine()

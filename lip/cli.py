@@ -277,6 +277,41 @@ def cmd_serve(args) -> int:
     return 0
 
 
+def cmd_sample(args) -> int:
+    """websource-business 가중 배치 — 라벨링(library) 경로로 저장."""
+    from .sample import CATALOG, run_batch
+    from .workflow import build_workflow
+
+    cfg = load_config(args.config)
+    reg = _registry(cfg)
+    out_root = Path(args.out_root or r"C:\cursor\ipplant")
+    if args.dry_run:
+        client = MockComfyClient((cfg.profile.width, cfg.profile.height))
+    else:
+        engines = _online_engines(cfg, reg)
+        if not engines:
+            print("Comfy offline — dry-run mock 으로 대체")
+            client = MockComfyClient((cfg.profile.width, cfg.profile.height))
+        else:
+            client = engines[0][1]
+
+    def _build(pos, neg, seed, profile):
+        return build_workflow(pos, neg, seed, profile, quality=False)
+
+    result = run_batch(
+        args.total,
+        client=client,
+        build_workflow=_build,
+        profile=cfg.profile,
+        out_root=out_root,
+        workers=args.workers or cfg.workers,
+        base_seed=args.seed,
+        catalog_path=args.catalog or CATALOG,
+    )
+    print(f"sample 완료: saved={result.saved} failed={result.failed} by_sub={result.by_sub}")
+    return 0 if result.failed == 0 else 1
+
+
 def cmd_plant(args) -> int:
     """Lexi IPlant weighted batch → C:\\cursor\\ipplant\\library\\<cat>\\<sub>\\"""
     from .agent import run_generate_job
@@ -369,6 +404,15 @@ def main(argv: list[str] | None = None) -> int:
     pl.add_argument("--out-root", default=None, help=r"default C:\cursor\ipplant")
     pl.add_argument("--dry-run", action="store_true")
     pl.set_defaults(func=cmd_plant)
+
+    sm = sub.add_parser("sample", help="websource-business 가중 샘플 (라벨링·워터마크·XMP)")
+    sm.add_argument("--total", type=int, default=12, help="총 생성 장수")
+    sm.add_argument("--out-root", default=None, help=r"default C:\cursor\ipplant")
+    sm.add_argument("--catalog", default=None, help="websource-business.json 경로")
+    sm.add_argument("--workers", type=int, default=None)
+    sm.add_argument("--seed", type=int, default=0)
+    sm.add_argument("--dry-run", action="store_true")
+    sm.set_defaults(func=cmd_sample)
 
     ag = sub.add_parser("agent", help="IPlant agent — Neon/Vercel job 큐 폴링")
     ag.add_argument("--poll", type=float, default=5.0)

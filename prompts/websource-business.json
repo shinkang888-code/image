@@ -1,0 +1,118 @@
+{
+  "_note": "websource — 비즈니스/프랜차이즈 웹사이트용. 모든 프롬프트 영어. 텍스트는 레이어로 얹으므로 이미지에는 글자를 굽지 않는다.",
+  "quality_suffix": "photorealistic, commercial web photography, natural light, sharp focus, high detail, 8k",
+  "negative": "lowres, blurry, jpeg artifacts, watermark, text, lettering, signage text, logo, brand name, caption, subtitle, distorted faces, extra fingers, cartoon, cgi, oversaturated",
+  "sets": {
+    "storefront": {
+      "_w": 14,
+      "template": "exterior storefront of {biz}, {facade}, {time}, {angle}, blank unlettered signboard",
+      "axes": {
+        "biz": ["a specialty coffee shop", "a bakery", "a fried chicken restaurant", "a beauty salon", "a convenience store", "a pharmacy", "a fitness studio", "a dental clinic"],
+        "facade": ["glass front with warm interior glow", "brick facade with an awning", "minimal white facade with large windows", "wood and black steel facade"],
+        "time": ["golden hour", "blue hour dusk", "bright midday", "overcast morning"],
+        "angle": ["straight-on frontal view", "three-quarter street view"]
+      }
+    },
+    "interior": {
+      "_w": 13,
+      "template": "interior of {biz}, {feature}, {light}, {angle}, no people",
+      "axes": {
+        "biz": ["a specialty coffee shop", "a modern bakery", "a casual dining restaurant", "a beauty salon", "a fitness studio", "a dental clinic waiting room", "a co-working space", "a boutique retail store"],
+        "feature": ["counter and seating area", "product display shelving", "waiting lounge with sofas", "open kitchen pass"],
+        "light": ["soft daylight through large windows", "warm evening ambient lighting", "bright even ceiling lighting"],
+        "angle": ["wide interior shot at eye level", "corner composition showing two walls"]
+      }
+    },
+    "service_scene": {
+      "_w": 12,
+      "template": "{action}, {setting}, {crop}, {light}",
+      "axes": {
+        "action": ["a barista pouring latte art", "a baker shaping dough", "a hairstylist working on a client", "a dentist reviewing an x-ray on a monitor", "a mechanic inspecting an engine", "a florist arranging a bouquet", "a chef plating a dish", "a trainer adjusting gym equipment"],
+        "setting": ["in a modern shop interior", "at a clean work counter", "in a bright studio space"],
+        "crop": ["hands and workspace only, faces out of frame", "over-the-shoulder view, face not visible"],
+        "light": ["soft natural daylight", "warm directional light"]
+      }
+    },
+    "team": {
+      "_w": 10,
+      "template": "{scene}, {setting}, {crop}, {light}",
+      "axes": {
+        "scene": ["a small business team in a planning meeting", "two colleagues reviewing documents", "a consultant presenting at a whiteboard", "a team collaborating around a laptop", "a shop owner greeting at the counter"],
+        "setting": ["in a bright modern office", "in a warm cafe-style workspace", "in a minimal meeting room"],
+        "crop": ["waist-up, faces turned away or out of frame", "hands and documents in focus, people blurred"],
+        "light": ["soft window daylight", "even office lighting"]
+      }
+    },
+    "office": {
+      "_w": 9,
+      "template": "{space}, {style}, {light}, no people",
+      "axes": {
+        "space": ["a modern office desk setup", "a small meeting room with a round table", "an open-plan workspace", "a reception desk and lobby", "a private consulting room"],
+        "style": ["minimal scandinavian", "warm wood and greenery", "clean corporate white", "industrial loft"],
+        "light": ["bright morning daylight", "soft overcast light", "warm evening lamps"]
+      }
+    },
+    "industry": {
+      "_w": 9,
+      "template": "{site}, {detail}, {light}, no people",
+      "axes": {
+        "site": ["a clean small factory floor", "a logistics warehouse with racking", "a construction site exterior", "a medical clinic corridor", "a classroom with desks", "a commercial kitchen", "an auto repair bay", "an agricultural greenhouse"],
+        "detail": ["wide establishing view", "mid-range view of equipment"],
+        "light": ["bright industrial lighting", "natural daylight through high windows"]
+      }
+    },
+    "product_shot": {
+      "_w": 8,
+      "template": "{item}, {surface}, {light}, centered, blank unlabeled packaging",
+      "axes": {
+        "item": ["a cup of specialty coffee", "an artisan bread loaf", "a plated brunch dish", "a cosmetic jar set", "a folded apparel stack", "a leather wallet"],
+        "surface": ["on a light wooden table", "on a matte stone slab", "on a seamless white sweep"],
+        "light": ["soft window light with gentle shadow", "bright even studio light"]
+      }
+    },
+    "promo_banner": {
+      "_w": 6,
+      "template": "{comp} for a web banner, {palette}, {mood}, wide composition with generous empty space on one side",
+      "axes": {
+        "comp": ["a clean product-and-background composition", "an abstract geometric arrangement", "a soft gradient field with subtle shapes"],
+        "palette": ["warm neutral tones", "cool blue and white", "deep green and cream", "black and gold"],
+        "mood": ["calm and premium", "fresh and energetic", "minimal and editorial"]
+      }
+    },
+    "blog_thumb": {
+      "_w": 6,
+      "template": "{topic} concept image, {treatment}, {light}, simple composition",
+      "axes": {
+        "topic": ["small business growth", "customer service", "digital marketing", "financial planning", "team training", "product launch"],
+        "treatment": ["flat lay of desk objects", "soft-focus workspace scene", "minimal still life"],
+        "light": ["bright airy daylight", "warm soft light"]
+      }
+    },
+    "hero_abstract": {
+      "_w": 5,
+      "template": "{form}, {palette}, {finish}, wide hero background",
+      "axes": {
+        "form": ["smooth flowing gradient waves", "soft blurred bokeh field", "layered translucent glass shapes", "subtle organic mesh"],
+        "palette": ["warm sand and cream", "deep navy and teal", "muted sage and stone", "charcoal and amber"],
+        "finish": ["matte and grainless", "soft film grain", "glossy with gentle highlights"]
+      }
+    },
+    "texture_bg": {
+      "_w": 5,
+      "template": "seamless {material} texture, {light}, flat even surface, top-down",
+      "axes": {
+        "material": ["natural linen fabric", "brushed concrete", "light oak wood grain", "recycled paper", "matte ceramic", "soft plaster wall"],
+        "light": ["soft diffuse light", "gentle raking light revealing texture"]
+      }
+    },
+    "icon_scene": {
+      "_w": 3,
+      "template": "a minimal 3d illustration of {object}, {style}, {palette}, centered on plain background",
+      "axes": {
+        "object": ["a shopping bag", "a location pin", "a calendar", "a chat bubble", "a shield badge", "a growth chart"],
+        "style": ["soft clay render", "glossy plastic render"],
+        "palette": ["pastel neutral", "brand blue and white"]
+      }
+    }
+  }
+}
