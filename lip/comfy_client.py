@@ -70,8 +70,11 @@ class ComfyClient:
             raise ComfyError(f"no prompt_id in response: {data}")
         return pid
 
-    def wait(self, prompt_id: str, poll: float = 1.0, max_wait: float = 300.0) -> dict:
-        """history 에 결과가 나타날 때까지 폴링. 완료된 노드 출력 dict 반환."""
+    def wait(self, prompt_id: str, poll: float = 1.0, max_wait: float = 900.0) -> dict:
+        """history 에 결과가 나타날 때까지 폴링. 완료된 노드 출력 dict 반환.
+
+        GGUF 첫 로드(USB 외장)는 수분 걸릴 수 있어 기본 max_wait=900s.
+        """
         deadline = time.monotonic() + max_wait
         while time.monotonic() < deadline:
             hist = self._get_json(f"/history/{prompt_id}")

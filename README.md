@@ -13,7 +13,7 @@
 
 ## 빠른 시작 (이 PC)
 
-기본 엔진은 **Krea GGUF** (`D:\ComfyUI_windows_portable`에 이미 있는 모델) —
+기본 엔진은 **Krea GGUF** (`C:\cursor\ComfyUI\models`) —
 sonsu / linkr 작가·전시 배치와 동일 그래프.
 
 ```powershell
@@ -34,9 +34,9 @@ python -m lip run --dashboard --count 50   # http://localhost:8787
 | `scripts/start-comfy.ps1` | Comfy 기동·ready 대기 |
 | `scripts/factory.ps1` | 기동 + doctor + 연속 생성 원샷 |
 
-`scripts/start-comfy.ps1` 이 embed Python 실행 실패를 보고하면
-`D:\ComfyUI_windows_portable\python_embeded` 가 손상·미동기화된 것이다.
-`update\update_comfyui_and_python_dependencies.bat` 또는 portable 재설치 후 재시도.
+**런타임 (권장)**: `C:\cursor\ComfyUI` (venv + CUDA).  
+**모델**: `D:\ComfyUI_windows_portable\ComfyUI\models` (`extra_model_paths.yaml` 연결).  
+D:는 WD USB 외장 HDD — 끊김/Delayed Write 시 생성을 멈추고, USB 절전을 끈 뒤 재시도.
 
 ## 엔진
 
