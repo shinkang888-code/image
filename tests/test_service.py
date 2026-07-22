@@ -5,6 +5,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from lip.comfy_client import MockComfyClient
 from lip.config import Config
 from lip.service import GenerationService, request_id, serve_service
 
@@ -21,6 +22,28 @@ class TestGenerationService(unittest.TestCase):
     def test_request_id_is_stable_and_seed_sensitive(self):
         self.assertEqual(request_id("a serum bottle", 7), request_id("a serum bottle", 7))
         self.assertNotEqual(request_id("a serum bottle", 7), request_id("a serum bottle", 8))
+
+    def test_request_id_separates_mock_from_live(self):
+        """목업 산출물이 LIVE 캐시 히트로 '실사' 행세를 하면 안 된다."""
+        self.assertNotEqual(
+            request_id("a serum bottle", 7, mock=True),
+            request_id("a serum bottle", 7, mock=False),
+        )
+
+    def test_mock_artifact_is_not_served_as_live(self):
+        """같은 (프롬프트,시드)라도 모드가 다르면 캐시를 재사용하지 않는다."""
+        with tempfile.TemporaryDirectory() as tmp:
+            cfg = _cfg(tmp)
+            mock_svc = GenerationService(cfg, mock=True)
+            first = mock_svc.generate("a serum bottle", seed=7)
+
+            live_svc = GenerationService(_cfg(tmp), client=MockComfyClient((64, 64)), mock=False)
+            second = live_svc.generate("a serum bottle", seed=7)
+
+            self.assertNotEqual(first["id"], second["id"])
+            self.assertFalse(second["cached"])   # 목업 폴더를 히트하지 않음
+            self.assertTrue(first["mock"])
+            self.assertFalse(second["mock"])
 
     def test_generate_writes_both_formats(self):
         with tempfile.TemporaryDirectory() as tmp:

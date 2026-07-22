@@ -38,9 +38,15 @@ DEFAULT_NEGATIVE = (
 )
 
 
-def request_id(prompt: str, seed: int) -> str:
-    """프롬프트+시드 기반 안정적 id — 같은 주문은 같은 폴더에 떨어진다."""
-    return hashlib.sha1(f"{prompt}|{seed}".encode("utf-8")).hexdigest()[:12]
+def request_id(prompt: str, seed: int, mock: bool = False) -> str:
+    """프롬프트+시드+엔진출처 기반 안정적 id — 같은 주문은 같은 폴더에 떨어진다.
+
+    mock 을 키에 포함하는 이유: 목업 그라디언트와 실사가 같은 칸을 쓰면,
+    나중에 LIVE 로 띄웠을 때 캐시 히트가 목업을 '실사'로 되돌려준다.
+    출처가 다르면 산출물도 다른 칸에 둔다.
+    """
+    provenance = "mock" if mock else "live"
+    return hashlib.sha1(f"{prompt}|{seed}|{provenance}".encode("utf-8")).hexdigest()[:12]
 
 
 class GenerationService:
@@ -79,7 +85,7 @@ class GenerationService:
             raise ValueError(f"prompt too long (>{MAX_PROMPT_CHARS} chars)")
         seed = int(seed if seed is not None else self.cfg.base_seed)
         negative = negative or DEFAULT_NEGATIVE
-        rid = request_id(prompt, seed)
+        rid = request_id(prompt, seed, self.mock)
         dest = self.out_dir / rid
 
         # 캐시 히트 — 같은 (프롬프트, 시드)는 다시 굽지 않는다.
