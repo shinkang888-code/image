@@ -11,11 +11,12 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 
 DEFAULT_EXCLUDE_DIR_NAMES = {
@@ -28,11 +29,31 @@ DEFAULT_EXCLUDE_DIR_NAMES = {
     "starcraft ii",
     "hearthstone",
     "heroes of the storm",
+    "python_embeded",
+    "__pycache__",
+    ".git",
+    "node_modules",
+    ".venv",
+    "venv",
 }
 
-DEFAULT_EXCLUDE_SUFFIXES = {
-    ".dropbox.device",
-}
+# 분할 압축/볼륨 — 크기는 같아도 내용이 다름. 해시 낭비·오삭 위험.
+def looks_like_split_volume(path: str) -> bool:
+    name = Path(path).name
+    if re.search(r"\.(7z|zip|rar)\.\d{2,3}$", name, re.I):
+        return True
+    if re.search(r"\.vol\d+\.", name, re.I):
+        return True
+    if re.search(r"\.(egg|k2k|ezc)$", name, re.I) and re.search(r"vol\d+|\.7z\.|\.001", name, re.I):
+        return True
+    if re.search(r"part\d+", name, re.I):
+        return True
+    return False
+
+
+def is_split_volume_group(group: list["FileMeta"]) -> bool:
+    """같은 크기 그룹이 전부 분할볼륨처럼 보이면 해시 스킵."""
+    return all(looks_like_split_volume(f.path) for f in group)
 
 
 @dataclass
@@ -58,8 +79,9 @@ def iter_files(roots: list[Path], exclude_dirs: set[str], min_bytes: int) -> lis
         if not root.exists():
             print(f"! skip missing root: {root}", flush=True)
             continue
+        print(f"  walking {root} ...", flush=True)
+        n_before = len(out)
         for dirpath, dirnames, filenames in os.walk(root):
-            # prune excluded dirs in-place
             dirnames[:] = [d for d in dirnames if not _should_skip_dir(d, exclude_dirs)]
             for fn in filenames:
                 fp = Path(dirpath) / fn
@@ -76,6 +98,7 @@ def iter_files(roots: list[Path], exclude_dirs: set[str], min_bytes: int) -> lis
                     ctime=getattr(st, "st_ctime", st.st_mtime),
                     mtime=st.st_mtime,
                 ))
+        print(f"  +{len(out)-n_before} files from {root}", flush=True)
     return out
 
 
@@ -152,10 +175,28 @@ def main(argv: list[str] | None = None) -> int:
     by_size: dict[int, list[FileMeta]] = {}
     for fm in files:
         by_size.setdefault(fm.size, []).append(fm)
-    to_hash = [fm for sz, group in by_size.items() if len(group) > 1 for fm in group]
+
+    to_hash: list[FileMeta] = []
+    skipped_split_groups = 0
+    for sz, group in by_size.items():
+        if len(group) < 2:
+            continue
+        if is_split_volume_group(group):
+            skipped_split_groups += 1
+            continue
+        # 혼합 그룹이면 분할볼륨만 빼고 해시
+        kept = [f for f in group if not looks_like_split_volume(f.path)]
+        if len(kept) >= 2:
+            to_hash.extend(kept)
+        elif len(group) >= 2 and not any(looks_like_split_volume(f.path) for f in group):
+            to_hash.extend(group)
+
     unique_sizes = sum(1 for g in by_size.values() if len(g) == 1)
-    print(f"size-unique={unique_sizes} need-hash={len(to_hash)} size-collision-groups="
-          f"{sum(1 for g in by_size.values() if len(g) > 1)}")
+    print(f"size-unique={unique_sizes} skip-split-groups={skipped_split_groups} "
+          f"need-hash={len(to_hash)}", flush=True)
+
+    # 작은 파일부터 — USB에서 조기 결과·진행 로그
+    to_hash.sort(key=lambda f: f.size)
 
     hashes: dict[str, str] = {}
     errors = 0
@@ -166,17 +207,18 @@ def main(argv: list[str] | None = None) -> int:
         for fut in as_completed(futs):
             path, digest, err = fut.result()
             done += 1
-            if done % 50 == 0 or done == len(futs):
-                print(f"  hashed {done}/{len(futs)} errors={errors}", flush=True)
+            fm = futs[fut]
+            mb = fm.size / 1024 / 1024
             if err or not digest:
                 errors += 1
-                print(f"! hash fail {path}: {err}", flush=True)
-                if "Incorrect function" in (err or "") or "not ready" in (err or "").lower():
+                print(f"! hash fail ({mb:.1f}MB) {path}: {err}", flush=True)
+                if err and ("Incorrect function" in err or "not ready" in err.lower()):
                     print("D: I/O unstable — STOP", file=sys.stderr)
                     return 3
-                continue
-            hashes[path] = digest
-    print(f"hash done in {time.monotonic()-t1:.1f}s errors={errors}")
+            else:
+                hashes[path] = digest
+                print(f"  hashed {done}/{len(futs)} ({mb:.1f}MB) OK", flush=True)
+    print(f"hash done in {time.monotonic()-t1:.1f}s errors={errors}", flush=True)
 
     by_hash: dict[str, list[FileMeta]] = {}
     for fm in to_hash:
