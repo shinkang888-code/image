@@ -37,15 +37,47 @@ def _online_engines(cfg, reg: NodeRegistry) -> list[tuple[str, object]]:
     return engines
 
 
+def _doctor_models(cfg, client: ComfyClient) -> list[str]:
+    """엔진별 필수 모델 존재 여부 점검. 문제 메시지 목록 반환."""
+    issues: list[str] = []
+    p = cfg.profile
+    if p.engine == "gguf":
+        checks = [
+            ("unet", p.unet),
+            ("text_encoders", p.clip),
+            ("vae", p.vae),
+        ]
+    else:
+        checks = [("checkpoints", p.checkpoint)]
+    for folder, name in checks:
+        names = client.list_models(folder)
+        if names is None:
+            issues.append(f"모델 목록 조회 실패(/models/{folder}) — ComfyUI 버전 확인")
+            continue
+        # basename 또는 상대경로로 매칭
+        basenames = {Path(x).name for x in names}
+        if name not in basenames and name not in names:
+            issues.append(f"누락: models/{folder}/{name}")
+        else:
+            print(f"  ✓ models/{folder}/{name}")
+    return issues
+
+
 def cmd_doctor(args) -> int:
     cfg = load_config(args.config)
     reg = _registry(cfg)
-    print(f"profile : {cfg.profile.checkpoint} {cfg.profile.width}x{cfg.profile.height} "
-          f"{cfg.profile.steps}steps cfg{cfg.profile.cfg} quality={cfg.quality}")
+    p = cfg.profile
+    if p.engine == "gguf":
+        print(f"engine  : gguf  unet={p.unet}  {p.width}x{p.height} "
+              f"{p.steps}steps cfg{p.cfg} sampler={p.sampler}")
+    else:
+        print(f"engine  : sdxl  ckpt={p.checkpoint}  {p.width}x{p.height} "
+              f"{p.steps}steps cfg{p.cfg} quality={cfg.quality}")
     print(f"output  : FHD{cfg.output.target} formats={cfg.formats} workers={cfg.workers} "
           f"takes={cfg.takes} retries={cfg.retries}")
     print("nodes   :")
     any_online = False
+    model_issues: list[str] = []
     for n in reg.list():
         c = ComfyClient(base_url=n.base_url)
         ok = c.ping()
@@ -53,9 +85,19 @@ def cmd_doctor(args) -> int:
         reg.update_status(n.id, "online" if ok else "offline")
         print(f"  {'●' if ok else '○'} {n.name:<14} {n.base_url}  [{'online' if ok else 'offline'}]"
               f"{' (active)' if n.active else ''}")
+        if ok and n.active:
+            print("models  :")
+            model_issues.extend(_doctor_models(cfg, c))
     if not any_online:
-        print("→ 온라인 노드 없음. `python -m lip run --dry-run` 으로 파이프라인 검증 가능.")
-    return 0 if any_online else 1
+        print("→ 온라인 노드 없음. `scripts/start-comfy.ps1` 로 ComfyUI 기동 후 재시도.")
+        print("→ 또는 `python -m lip run --dry-run` 으로 파이프라인 검증.")
+        return 1
+    if model_issues:
+        for m in model_issues:
+            print(f"→ {m}")
+        return 2
+    print("→ 공장 준비 완료. `python -m lip run --count 3` 또는 `scripts/factory.ps1`")
+    return 0
 
 
 def cmd_list(args) -> int:
@@ -189,6 +231,13 @@ def cmd_dashboard(args) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Windows cp949 콘솔에서도 상태 문자(—, →, ●)가 깨지지 않게
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            try:
+                stream.reconfigure(encoding="utf-8", errors="replace")
+            except Exception:
+                pass
     ap = argparse.ArgumentParser(prog="lip", description="Lexi Image Factory")
     ap.add_argument("--config", help="lip.toml 경로")
     sub = ap.add_subparsers(dest="cmd", required=True)

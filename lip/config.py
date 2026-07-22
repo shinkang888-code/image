@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .optimize import OutputSpec
-from .workflow import GpuProfile
+from .workflow import GpuProfile, gguf_profile
 
 
 @dataclass
@@ -64,15 +64,40 @@ def load_config(path: str | Path | None = None) -> Config:
     cfg.retries = int(_env("RETRIES") or factory.get("retries", cfg.retries))
     cfg.dashboard_port = int(_env("DASHBOARD_PORT") or factory.get("dashboard_port", cfg.dashboard_port))
 
-    cfg.profile = GpuProfile(
-        checkpoint=gpu.get("checkpoint", cfg.profile.checkpoint),
-        width=int(gpu.get("width", cfg.profile.width)),
-        height=int(gpu.get("height", cfg.profile.height)),
-        steps=int(gpu.get("steps", cfg.profile.steps)),
-        cfg=float(gpu.get("cfg", cfg.profile.cfg)),
-        sampler=gpu.get("sampler", cfg.profile.sampler),
-        scheduler=gpu.get("scheduler", cfg.profile.scheduler),
-    )
+    engine = (_env("ENGINE") or gpu.get("engine") or "sdxl").lower()
+    if engine == "gguf":
+        g = gguf_profile()
+        cfg.profile = gguf_profile(
+            unet=gpu.get("unet", g.unet),
+            clip=gpu.get("clip", g.clip),
+            clip_type=gpu.get("clip_type", g.clip_type),
+            vae=gpu.get("vae", g.vae),
+            width=int(gpu.get("width", g.width)),
+            height=int(gpu.get("height", g.height)),
+            steps=int(gpu.get("steps", g.steps)),
+            cfg=float(gpu.get("cfg", g.cfg)),
+            sampler=gpu.get("sampler", g.sampler),
+            scheduler=gpu.get("scheduler", g.scheduler),
+            checkpoint=gpu.get("checkpoint", g.checkpoint),
+            upscale_model=gpu.get("upscale_model", g.upscale_model),
+        )
+    else:
+        cfg.profile = GpuProfile(
+            engine="sdxl",
+            checkpoint=gpu.get("checkpoint", cfg.profile.checkpoint),
+            unet=gpu.get("unet", cfg.profile.unet),
+            clip=gpu.get("clip", cfg.profile.clip),
+            clip_type=gpu.get("clip_type", cfg.profile.clip_type),
+            vae=gpu.get("vae", cfg.profile.vae),
+            width=int(gpu.get("width", cfg.profile.width)),
+            height=int(gpu.get("height", cfg.profile.height)),
+            steps=int(gpu.get("steps", cfg.profile.steps)),
+            cfg=float(gpu.get("cfg", cfg.profile.cfg)),
+            sampler=gpu.get("sampler", cfg.profile.sampler),
+            scheduler=gpu.get("scheduler", cfg.profile.scheduler),
+            upscale_model=gpu.get("upscale_model", cfg.profile.upscale_model),
+        )
+
     cfg.output = OutputSpec(
         target=tuple(out.get("target", cfg.output.target)),
         webp_quality=int(out.get("webp_quality", cfg.output.webp_quality)),

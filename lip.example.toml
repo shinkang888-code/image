@@ -1,27 +1,48 @@
 # LIP 설정 예시 — 복사해서 lip.toml 로 저장. 파일이 없어도 내장 기본값으로 동작한다.
-# 환경변수(LIP_COMFY_HOST 등)가 파일보다 우선.
+# 환경변수(LIP_COMFY_HOST, LIP_ENGINE 등)가 파일보다 우선.
 
 [comfy]
-host = "127.0.0.1:8188"        # ComfyUI 주소
+host = "127.0.0.1:8188"        # ComfyUI 주소 (D:\ComfyUI_windows_portable)
 
 [factory]
 out_dir = "out"
 workers = 4                     # CPU 인코딩 병렬도 (GPU 는 항상 직렬 1)
 formats = ["webp", "jpg"]       # 요구: 가장 작은 웹포맷 + jpg
 base_seed = 0
-# catalog = "lip/prompts/catalog.json"   # 커스텀 프롬프트 카탈로그 경로
+takes = 1
+retries = 1
+dashboard_port = 8787
+# catalog = "prompts/catalog.json"
 
-[gpu]                           # 8GB + SDXL-Lightning 기본값
-checkpoint = "sdxl_lightning_6step.safetensors"
-width = 1344                    # SDXL 16:9 네이티브 (~1MP)
-height = 768
-steps = 6
-cfg = 2.0
-sampler = "euler"
-scheduler = "sgm_uniform"
+# --- 엔진 선택 ---
+# gguf  : 로컬에 이미 있는 Krea-2-Turbo (sonsu/linkr 작가 작업과 동일)
+# sdxl  : SDXL-Lightning 체크포인트 필요 (checkpoints/ 에 배치)
+
+[gpu]
+engine = "gguf"
+unet = "krea2_turbo-Q3_K_M.gguf"
+clip = "qwen3vl_4b_fp8_scaled.safetensors"
+clip_type = "krea2"
+vae = "qwen_image_vae.safetensors"
+width = 1216
+height = 832
+steps = 8
+cfg = 1.0
+sampler = "er_sde"
+scheduler = "simple"
+
+# SDXL 모드 예시:
+# engine = "sdxl"
+# checkpoint = "sdxl_lightning_4step.safetensors"   # HF에 6step 없음 → 4 또는 8
+# width = 1344
+# height = 768
+# steps = 4
+# cfg = 2.0
+# sampler = "euler"
+# scheduler = "sgm_uniform"
 
 [output]
 target = [1920, 1080]           # FHD
 webp_quality = 80
-webp_method = 6                 # 0(빠름)~6(최소용량)
+webp_method = 6
 jpg_quality = 82

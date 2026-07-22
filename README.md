@@ -11,20 +11,63 @@
 단일 8GB GPU 는 diffusion 을 병렬화 못 한다 → **GPU 는 생성만 직렬로 쉼 없이**,
 **FHD 업스케일 + WebP/JPG 인코딩은 CPU 워커풀에서 병렬**. GPU 가 I/O 를 안 기다려 처리량 최대.
 
+## 빠른 시작 (이 PC)
+
+기본 엔진은 **Krea GGUF** (`D:\ComfyUI_windows_portable`에 이미 있는 모델) —
+sonsu / linkr 작가·전시 배치와 동일 그래프.
+
+```powershell
+pip install -r requirements.txt
+Copy-Item lip.example.toml lip.toml   # 이미 있으면 생략
+.\scripts\factory.ps1 -Count 5 -Tag interior -LowVram
+# 또는 단계별:
+.\scripts\start-comfy.ps1 -WaitReady -LowVram
+python -m lip doctor
+python -m lip run --count 5 --tag interior
+python -m lip run --dashboard --count 50   # http://localhost:8787
+```
+
+| 경로 | 역할 |
+|------|------|
+| `D:\ComfyUI_windows_portable` | ComfyUI 본체 + Krea GGUF / Qwen TE / VAE |
+| `lip.toml` `[gpu] engine=gguf` | LIP → Comfy HTTP (`127.0.0.1:8188`) |
+| `scripts/start-comfy.ps1` | Comfy 기동·ready 대기 |
+| `scripts/factory.ps1` | 기동 + doctor + 연속 생성 원샷 |
+
+`scripts/start-comfy.ps1` 이 embed Python 실행 실패를 보고하면
+`D:\ComfyUI_windows_portable\python_embeded` 가 손상·미동기화된 것이다.
+`update\update_comfyui_and_python_dependencies.bat` 또는 portable 재설치 후 재시도.
+
+## 엔진
+
+| engine | 모델 | 용도 |
+|--------|------|------|
+| **gguf** (기본 lip.toml) | `krea2_turbo-Q3_K_M.gguf` + Qwen CLIP/VAE | 작가·전시·범용 (지금 설치본) |
+| **sdxl** | `sdxl_lightning_4step.safetensors` | 인테리어 실사 고속 (별도 다운로드) |
+
+SDXL 전환 시 `lip.toml`:
+```toml
+[gpu]
+engine = "sdxl"
+checkpoint = "sdxl_lightning_4step.safetensors"  # HF에 6step 없음 → 4 또는 8
+width = 1344
+height = 768
+steps = 4
+cfg = 2.0
+sampler = "euler"
+scheduler = "sgm_uniform"
+```
+체크포인트: `D:\ComfyUI_windows_portable\ComfyUI\models\checkpoints\`
+
 ## 설치
 ```bash
 pip install -r requirements.txt      # Pillow 하나만. 통신은 stdlib. Python 3.11+
 ```
 
-## ComfyUI 준비 (8GB)
-1. [ComfyUI](https://github.com/comfyanonymous/ComfyUI) 설치 후 `python main.py --lowvram` 로 기동 (기본 `127.0.0.1:8188`).
-2. SDXL-Lightning 체크포인트를 `ComfyUI/models/checkpoints/` 에 배치
-   (예: `sdxl_lightning_6step.safetensors`). `lip.toml [gpu] checkpoint` 와 파일명을 맞춘다.
-
 ## 사용
 ```bash
-python -m lip doctor                          # 노드 연결·설정 점검
-python -m lip list --tag interior             # 전개된 프롬프트 미리보기 (504개)
+python -m lip doctor                          # 노드·모델 점검
+python -m lip list --tag interior             # 전개된 프롬프트 미리보기
 python -m lip run --count 200 --tag interior  # 200장 연속 생성 → out/
 python -m lip run --dashboard                 # 작업제어 대시보드와 함께 공장 가동
 python -m lip run --quality --takes 3         # ESRGAN 고화질 + 프롬프트당 3장 변주
@@ -35,62 +78,51 @@ python -m lip run --dry-run --count 5          # GPU 없이 Mock 엔진으로 �
 ```bash
 python -m lip run --dashboard    # → http://localhost:8787
 ```
-KPI(총/완료/진행/실패/분당처리/총용량) · 작업 큐(상태 배지) · Compute Node 상태 ·
-태그 분포 · 라이브 이벤트 피드 · 최근 생성물 갤러리 · 일시정지/재개/중지 제어. 2초 폴링, 무의존.
 
 ### 멀티 노드 분산 생성 (lasset 이식)
-아무 ComfyUI 호환 URL(로컬 8GB, 두 번째 PC, RunPod 등)을 등록해 8GB 한 장을 넘어 분산:
 ```bash
 python -m lip nodes add --name gpu2 --url http://192.168.0.20:8188
-python -m lip nodes add --name runpod --url https://xxx-8188.proxy.runpod.net
-python -m lip nodes list          # 활성 노드에 라운드로빈 분산
+python -m lip nodes list
 ```
 
-### 조감도 실사화 — img2img (로컬 render.ts 대체)
-Lexi Draft 3D 스냅샷 또는 Scene JSON 을 로컬에서 실사 렌더:
+### 조감도 실사화 — img2img (SDXL 전용)
 ```bash
 python -m lip render --image snapshot.png --scene plan.lexi.json --style scandinavian
-python -m lip render --image snapshot.png --prompt "modern living room" --denoise 0.55 --quality
 ```
+`engine=gguf` 일 때는 img2img 미지원 → `engine=sdxl` 로 전환.
 
 출력:
 ```
-out/<prompt-id>/image.webp   # 가장 작은 웹포맷 (FHD)
-out/<prompt-id>/image.jpg    # 호환용 (FHD)
-out/manifest.jsonl           # 완료 기록 = 재개·중복제거 기준
+out/<prompt-id>/image.webp
+out/<prompt-id>/image.jpg
+out/manifest.jsonl
 ```
-중단 후 같은 명령을 다시 실행하면 `manifest.jsonl` 을 읽어 **이어서** 생성한다.
 
 ## 설정
-`lip.example.toml` → `lip.toml` 로 복사해 수정. 파일 없이도 내장 기본값으로 동작하며,
-환경변수(`LIP_COMFY_HOST`, `LIP_WORKERS`, `LIP_OUT_DIR` …)가 파일보다 우선한다.
+`lip.example.toml` → `lip.toml`. 환경변수(`LIP_COMFY_HOST`, `LIP_ENGINE`, `LIP_WORKERS` …)가 파일보다 우선.
 
 ## 구조
 ```
 lip/
-  lip/config.py       설정 (TOML + env fallback)
-  lip/prompts.py      catalog.json → 조합 전개 (순수함수)
-  lip/workflow.py     ComfyUI API-format 그래프 빌더 (SDXL-Lightning)
-  lip/comfy_client.py ComfyUI HTTP 클라이언트 (stdlib) + Mock(dry-run)
-  lip/optimize.py     FHD cover-crop → WebP + JPG (순수)
-  lip/manifest.py     재개·중복제거
-  lip/factory.py      오케스트레이터 (GPU 직렬 ∥ CPU 워커풀 · 멀티노드 · 재시도 · takes)
-  lip/jobs.py         작업제어 코어 — 작업큐·이벤트·제어 (LinkNode 명령큐 이식)
-  lip/nodes.py        Compute Node 레지스트리 (lasset 이식)
-  lip/dashboard.py    작업제어 대시보드 서버 (LinkNode 대시보드 이식, stdlib)
-  lip/scene.py        Scene JSON → 실사 프롬프트 (로컬 render.ts 대체)
-  lip/cli.py          python -m lip {doctor,list,run,render,nodes,dashboard}
-  prompts/catalog.json
-  workflows/          참고용 정적 워크플로우
-  tests/              unittest (stdlib) — 33개 통과
+  workflow.py     SDXL + GGUF(Krea) 그래프 빌더
+  comfy_client.py ComfyUI HTTP + Mock
+  factory.py      GPU 직렬 ∥ CPU 워커풀
+  jobs.py / dashboard.py / nodes.py
+scripts/
+  start-comfy.ps1 ComfyUI 기동
+  factory.ps1     공장 원샷
+workflows/
+  krea_gguf_8gb.json
+  sdxl_lightning_8gb*.json
 ```
 
 ## 다른 리포에서 이식한 것
 | 출처 | 이식 내용 |
 |---|---|
-| **LinkNode** (하드웨어 관제 콘솔) | 명령큐 생명주기(pending→…→done/failed/cancelled)·KPI 대시보드·라이브 이벤트 피드·제어 → `jobs.py`, `dashboard.py` |
-| **lasset** (Game Asset Studio) | provider-agnostic Compute Node 레지스트리(멀티 ComfyUI 분산) → `nodes.py` |
-| **voicebox** (AI 음성 스튜디오) | 비동기 큐·실패 재시도·takes(시드 변주) 패턴 → `factory.py` |
+| **LinkNode** | 작업큐·KPI 대시보드 → `jobs.py`, `dashboard.py` |
+| **lasset** | Compute Node 레지스트리 → `nodes.py` |
+| **voicebox** | 재시도·takes → `factory.py` |
+| **sonsu / linkr** | Krea GGUF 작가·전시 그래프 → `workflow.build_workflow_gguf` |
 
 ## 테스트
 ```bash

@@ -53,6 +53,16 @@ class ComfyClient:
         except (urllib.error.URLError, OSError, ComfyError):
             return False
 
+    def list_models(self, folder: str) -> list[str] | None:
+        """ComfyUI `/models/{folder}` 목록. 미지원/실패 시 None."""
+        try:
+            data = self._get_json(f"/models/{folder}")
+            if isinstance(data, list):
+                return [str(x) for x in data]
+            return None
+        except (urllib.error.URLError, OSError, ComfyError, json.JSONDecodeError):
+            return None
+
     def queue(self, workflow: dict) -> str:
         data = self._post("/prompt", {"prompt": workflow})
         pid = data.get("prompt_id")
