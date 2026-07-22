@@ -1,0 +1,62 @@
+{
+  "quality_suffix": "photorealistic, ultra realistic, high detail, sharp focus, professional photography, 8k, natural materials",
+  "negative": "lowres, blurry, jpeg artifacts, watermark, text, signature, deformed, distorted perspective, oversaturated, cartoon, cgi, plastic, extra windows, warped walls",
+  "sets": {
+    "interior": {
+      "template": "interior photograph of a {room}, {style} style, {lighting}, {camera}",
+      "axes": {
+        "room": [
+          "living room with sofa and coffee table",
+          "bedroom with a bed and wardrobe",
+          "kitchen with island and cabinets",
+          "bathroom with vanity and mirror",
+          "home office with desk and bookshelf",
+          "dining room with table and chairs"
+        ],
+        "style": [
+          "modern minimalist",
+          "scandinavian",
+          "warm mid-century",
+          "industrial loft",
+          "cozy japandi",
+          "luxury contemporary"
+        ],
+        "lighting": [
+          "soft natural daylight through large windows",
+          "warm golden hour light",
+          "bright even studio lighting",
+          "cozy evening lamp light"
+        ],
+        "camera": [
+          "wide angle real estate shot, eye level",
+          "corner composition showing two walls",
+          "straight-on frontal composition"
+        ]
+      }
+    },
+    "web": {
+      "template": "{subject}, {treatment}, {lighting}",
+      "axes": {
+        "subject": [
+          "abstract gradient background",
+          "soft bokeh light background",
+          "minimal geometric texture",
+          "blurred modern office backdrop",
+          "clean marble surface texture",
+          "subtle paper grain texture"
+        ],
+        "treatment": [
+          "smooth clean web banner",
+          "high resolution hero background",
+          "muted professional palette",
+          "vibrant but tasteful"
+        ],
+        "lighting": [
+          "soft diffuse light",
+          "gentle vignette",
+          "bright airy"
+        ]
+      }
+    }
+  }
+}

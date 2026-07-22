@@ -1,0 +1,3 @@
+# LIP 은 무의존 지향 (CLAUDE.md 규칙4). 필수 의존성은 Pillow 하나.
+# ComfyUI 통신은 stdlib urllib, 설정은 stdlib tomllib (Python 3.11+).
+Pillow>=10.0

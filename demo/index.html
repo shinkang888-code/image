@@ -1,0 +1,114 @@
+<!doctype html><html lang=ko><head><meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<title>LIP · 이미지 공장 제어 대시보드 (데모)</title>
+<meta name=description content="Lexi Image Factory — 로컬 ComfyUI 8GB GPU 웹 이미지 공장의 작업제어 대시보드 데모">
+<style>
+:root{--bg:#0b0f17;--card:#141b2b;--line:#243049;--fg:#e6ecf5;--mut:#8291ad;--ok:#34d399;--warn:#fbbf24;--err:#f87171;--info:#60a5fa;--accent:#7c8cff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,'Segoe UI',sans-serif}
+header{padding:16px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+h1{font-size:17px;margin:0;font-weight:700}.sub{color:var(--mut);font-size:12px}
+.wrap{padding:20px 24px;max-width:1280px;margin:0 auto}
+.demo-note{background:#1a2336;border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--mut)}
+.demo-note b{color:var(--fg)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.kpi .l{color:var(--mut);font-size:12px}.kpi .v{font-size:26px;font-weight:700;margin-top:4px}
+.grid{display:grid;grid-template-columns:1.6fr 1fr;gap:16px}@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+.panel h2{font-size:13px;margin:0 0 12px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
+th{color:var(--mut);font-weight:600}td.mono{font-family:ui-monospace,monospace;font-size:12px;color:var(--mut)}
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600}
+.b-pending{background:#2a3346;color:var(--mut)}.b-generating,.b-optimizing{background:#1e3a5f;color:var(--info)}
+.b-done{background:#123524;color:var(--ok)}.b-failed{background:#3a1620;color:var(--err)}.b-cancelled{background:#2a3346;color:var(--mut)}
+.b-online{background:#123524;color:var(--ok)}.b-offline{background:#3a1620;color:var(--err)}.b-unknown{background:#2a3346;color:var(--mut)}
+.feed{max-height:320px;overflow:auto}.ev{padding:6px 0;border-bottom:1px solid var(--line);font-size:12px;display:flex;gap:8px}
+.ev .dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex:none}
+.dot.info{background:var(--info)}.dot.success{background:var(--ok)}.dot.warning{background:var(--warn)}.dot.error{background:var(--err)}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+button{background:var(--accent);color:#fff;border:0;border-radius:9px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer}
+button.ghost{background:transparent;border:1px solid var(--line);color:var(--fg)}button:active{transform:translateY(1px)}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.gallery img{width:100%;border-radius:8px;border:1px solid var(--line);aspect-ratio:16/9;object-fit:cover;background:#000}
+.dist{display:flex;flex-direction:column;gap:6px}.bar{height:8px;border-radius:4px;background:var(--accent)}
+.pill{padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;border:1px solid var(--line)}
+.pill.run{background:#123524;color:var(--ok)}.pill.pause{background:#3a2a10;color:var(--warn)}
+a{color:var(--accent)}
+</style></head><body>
+<header>
+  <h1>🏭 LIP 이미지 공장</h1><span class=sub id=sub>가동 312s · 152.4/분</span>
+  <span class="pill run" id=state>가동 중</span>
+  <div class=controls>
+    <button class=ghost onclick=toggle('pause')>일시정지</button>
+    <button class=ghost onclick=toggle('resume')>재개</button>
+    <button onclick=toggle('stop')>중지</button>
+  </div>
+</header>
+<div class=wrap>
+  <div class=demo-note>📖 <b>정적 데모</b> — 이것은 <b>Lexi Image Factory(LIP)</b> 작업제어 대시보드의 UI 미리보기입니다(샘플 데이터). 실제 라이브 관제는 로컬에서 <code>python -m lip run --dashboard</code> 로 실행하며 ComfyUI + 8GB GPU 에 연결됩니다. 소스: <code>shinkang888-code/image</code>.</div>
+  <div class=kpis id=kpis></div>
+  <div class=grid>
+    <div>
+      <div class=panel><h2>작업 큐</h2><table><thead><tr><th>상태</th><th>태그</th><th>ID</th><th>노드</th><th>용량</th></tr></thead><tbody id=jobs></tbody></table></div>
+      <div class=panel><h2>최근 생성물</h2><div class=gallery id=gallery></div></div>
+    </div>
+    <div>
+      <div class=panel><h2>Compute Nodes</h2><table><thead><tr><th>상태</th><th>이름</th><th>URL</th></tr></thead><tbody id=nodes></tbody></table></div>
+      <div class=panel><h2>태그 분포</h2><div class=dist id=dist></div></div>
+      <div class=panel><h2>라이브 이벤트</h2><div class="feed" id=feed></div></div>
+    </div>
+  </div>
+</div>
+<script>
+const SAMPLE={
+ totals:{total:128,done:113,running:2,pending:13,failed:0,throughput_per_min:152.4,bytes_total:88080384,elapsed_sec:312},
+ paused:false,stopped:false,
+ distribution:[{tag:'interior',value:78},{tag:'web',value:35}],
+ jobs:[
+  {status:'generating',status_label:'생성 중',tag:'interior',prompt_id:'2fa9e434fa2a',node:'local-8gb',bytes_total:0,positive:'living room, modern minimalist'},
+  {status:'optimizing',status_label:'최적화 중',tag:'web',prompt_id:'dc11c93b67ac',node:'gpu2',bytes_total:0,positive:'abstract gradient background'},
+  {status:'done',status_label:'완료',tag:'interior',prompt_id:'c4a0f790d7b8',node:'local-8gb',bytes_total:17408,positive:'bedroom, scandinavian, golden hour'},
+  {status:'done',status_label:'완료',tag:'interior',prompt_id:'154e9242535e',node:'gpu2',bytes_total:16334,positive:'kitchen island, warm mid-century'},
+  {status:'done',status_label:'완료',tag:'web',prompt_id:'ab4b287cfd30',node:'local-8gb',bytes_total:14210,positive:'soft bokeh light background'},
+  {status:'done',status_label:'완료',tag:'interior',prompt_id:'109b340115b6',node:'gpu2',bytes_total:16050,positive:'home office, japandi, daylight'},
+  {status:'done',status_label:'완료',tag:'interior',prompt_id:'c5c050d25b15',node:'local-8gb',bytes_total:15980,positive:'bathroom vanity, luxury contemporary'},
+  {status:'done',status_label:'완료',tag:'web',prompt_id:'7be1aa02c9d1',node:'gpu2',bytes_total:13120,positive:'clean marble surface texture'},
+  {status:'done',status_label:'완료',tag:'interior',prompt_id:'4c8d7564a4a1',node:'local-8gb',bytes_total:16720,positive:'dining room, industrial loft'},
+  {status:'done',status_label:'완료',tag:'interior',prompt_id:'b948ca3eb1d6',node:'gpu2',bytes_total:17010,positive:'living room, corner shot, evening lamp'},
+  {status:'pending',status_label:'대기',tag:'web',prompt_id:'e1f0a7c2d3b4',node:'-',bytes_total:0,positive:'minimal geometric texture'},
+  {status:'pending',status_label:'대기',tag:'interior',prompt_id:'a2b3c4d5e6f7',node:'-',bytes_total:0,positive:'bedroom, wide angle, natural light'}
+ ],
+ nodes:[
+  {status:'online',name:'local-8gb',base_url:'http://127.0.0.1:8188',active:true},
+  {status:'online',name:'gpu2',base_url:'http://192.168.0.20:8188',active:true},
+  {status:'offline',name:'runpod',base_url:'https://xxx-8188.proxy.runpod.net',active:false}
+ ],
+ events:[
+  {level:'success',message:'[113] interior/b948ca3eb1d6@gpu2  (webp 17KB, jpg 60KB)'},
+  {level:'info',message:'[112] interior/4c8d7564a4a1@local-8gb  (webp 16KB, jpg 59KB)'},
+  {level:'success',message:'[111] web/7be1aa02c9d1@gpu2  (webp 13KB, jpg 51KB)'},
+  {level:'info',message:'공장 시작 — 목표 전체장, 워커 4'},
+  {level:'info',message:'노드 온라인: local-8gb, gpu2 (라운드로빈 분산)'}
+ ]
+};
+// 갤러리 플레이스홀더 — 16:9 그라디언트 SVG (실제 실행 시 생성된 webp 로 대체됨)
+function ph(a,b){return 'data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='320' height='180'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='${a}'/><stop offset='1' stop-color='${b}'/></linearGradient></defs><rect width='320' height='180' fill='url(%23g)'/></svg>`)}
+const PH=[['#6d84c9','#c98fb0'],['#7bc9a8','#4a6db0'],['#c9a86d','#8f5ab0'],['#5ab0c9','#b06d6d'],['#8fb05a','#5a6db0'],['#b05a9a','#5ab0a0'],['#c9c06d','#6d84c9'],['#6dc9b8','#c96d84']];
+function esc(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+function kpi(l,v){return `<div class=kpi><div class=l>${l}</div><div class=v>${v}</div></div>`}
+let paused=false;
+function toggle(a){paused=(a==='pause'||a==='stop');const st=document.getElementById('state');st.textContent=a==='stop'?'중지됨':paused?'일시정지':'가동 중';st.className='pill '+(paused?'pause':'run')}
+function render(){
+ const t=SAMPLE.totals;
+ document.getElementById('kpis').innerHTML=[
+  kpi('총 작업',t.total),kpi('완료',t.done),kpi('진행',t.running),kpi('대기',t.pending),
+  kpi('실패',t.failed),kpi('분당 처리',t.throughput_per_min),kpi('총 용량',(t.bytes_total/1048576).toFixed(1)+'MB')].join('');
+ document.getElementById('jobs').innerHTML=SAMPLE.jobs.map(x=>`<tr><td><span class="badge b-${x.status}">${x.status_label}</span></td><td>${esc(x.tag)}</td><td class=mono>${esc(x.prompt_id)}</td><td class=mono>${esc(x.node||'-')}</td><td class=mono>${x.bytes_total?(x.bytes_total/1024).toFixed(0)+'KB':'-'}</td></tr>`).join('');
+ document.getElementById('gallery').innerHTML=SAMPLE.jobs.filter(x=>x.status==='done').slice(0,8).map((x,i)=>`<img src="${ph(...PH[i%PH.length])}" title="${esc(x.positive)}">`).join('');
+ document.getElementById('nodes').innerHTML=SAMPLE.nodes.map(n=>`<tr><td><span class="badge b-${n.status}">${n.status}</span></td><td>${esc(n.name)}${n.active?' ●':''}</td><td class=mono>${esc(n.base_url)}</td></tr>`).join('');
+ const mx=Math.max(...SAMPLE.distribution.map(d=>d.value));
+ document.getElementById('dist').innerHTML=SAMPLE.distribution.map(d=>`<div><span class=sub>${esc(d.tag)} · ${d.value}</span><div class=bar style=width:${d.value/mx*100}%></div></div>`).join('');
+ document.getElementById('feed').innerHTML=SAMPLE.events.map(e=>`<div class=ev><span class="dot ${e.level}"></span><span>${esc(e.message)}</span></div>`).join('');
+}
+render();
+</script></body></html>
