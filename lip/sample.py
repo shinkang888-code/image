@@ -64,6 +64,7 @@ def run_batch(
     base_seed: int = 0,
     engine_label: str = "krea2t-q3km",
     catalog_path: str | Path | None = None,
+    resume: bool = True,
     log: Callable[[str], None] = print,
 ) -> BatchResult:
     catalog = load_catalog(catalog_path or CATALOG)
@@ -74,6 +75,17 @@ def run_batch(
     for sub, n in quotas.items():
         for i, p in enumerate(pick_prompts(catalog, sub, n)):
             jobs.append((sub, p, base_seed + i))
+
+    # 재개 — 이미 구운 (소분류, 프롬프트, 시드)는 건너뛴다.
+    # 장시간 배치가 중간에 죽어도 처음부터 다시 굽지 않는다. 산출물은 장당
+    # 즉시 디스크에 쓰이므로(library.save_asset) 매니페스트가 곧 진행 상황이다.
+    if resume:
+        done = library.done_keys(out_root)
+        if done:
+            before = len(jobs)
+            jobs = [j for j in jobs if (j[0], j[1].id, j[2]) not in done]
+            if before != len(jobs):
+                log(f"재개: 이미 완료된 {before - len(jobs)}장 건너뜀 → 남은 {len(jobs)}장")
 
     q: "queue.Queue[tuple[str, Prompt, int, bytes] | None]" = queue.Queue(maxsize=workers * 2)
     lock = threading.Lock()

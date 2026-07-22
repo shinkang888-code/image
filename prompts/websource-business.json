@@ -29,7 +29,7 @@
       "axes": {
         "action": ["a barista pouring latte art", "a baker shaping dough", "a hairstylist working on a client", "a dentist reviewing an x-ray on a monitor", "a mechanic inspecting an engine", "a florist arranging a bouquet", "a chef plating a dish", "a trainer adjusting gym equipment"],
         "setting": ["in a modern shop interior", "at a clean work counter", "in a bright studio space"],
-        "crop": ["hands and workspace only, faces out of frame", "over-the-shoulder view, face not visible"],
+        "crop": ["waist-up view, face clearly visible with a warm focused expression", "medium shot showing the person and their work, natural smile"],
         "light": ["soft natural daylight", "warm directional light"]
       }
     },
@@ -39,7 +39,7 @@
       "axes": {
         "scene": ["a small business team in a planning meeting", "two colleagues reviewing documents", "a consultant presenting at a whiteboard", "a team collaborating around a laptop", "a shop owner greeting at the counter"],
         "setting": ["in a bright modern office", "in a warm cafe-style workspace", "in a minimal meeting room"],
-        "crop": ["waist-up, faces turned away or out of frame", "hands and documents in focus, people blurred"],
+        "crop": ["waist-up group shot, faces clearly visible with engaged expressions", "medium shot around the table, natural confident expressions"],
         "light": ["soft window daylight", "even office lighting"]
       }
     },

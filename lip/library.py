@@ -115,6 +115,29 @@ def append_manifest(root: str | Path, rec: AssetRecord) -> None:
         f.write(json.dumps(asdict(rec), ensure_ascii=False) + "\n")
 
 
+def done_keys(root: str | Path) -> set[tuple[str, str, int]]:
+    """이미 구운 (소분류, prompt_id, seed) 집합 — 배치 재개용.
+
+    산출물은 장당 즉시 디스크에 쓰이고 매니페스트도 장당 append 되므로,
+    프로세스가 죽어도 여기까지가 보존된 진행 상황이다.
+    """
+    path = Path(root) / "library" / "manifest.jsonl"
+    out: set[tuple[str, str, int]] = set()
+    if not path.exists():
+        return out
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                r = json.loads(line)
+                out.add((r["subcategory"], r["prompt_id"], int(r["seed"])))
+            except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+                continue
+    return out
+
+
 def report(root: str | Path) -> dict[str, dict[str, int]]:
     """카테고리/소분류별 개수 집계 (탐색기·리포트용)."""
     path = Path(root) / "library" / "manifest.jsonl"
