@@ -277,6 +277,34 @@ def cmd_serve(args) -> int:
     return 0
 
 
+def cmd_plant(args) -> int:
+    """Lexi IPlant weighted batch → C:\\cursor\\ipplant\\library\\<cat>\\<sub>\\"""
+    from .agent import run_generate_job
+    weights = None
+    if args.weights:
+        weights = {}
+        for part in args.weights.split(","):
+            k, v = part.split(":")
+            weights[k.strip()] = float(v)
+    payload = {
+        "total": args.total,
+        "weights": weights,
+        "out_root": args.out_root,
+    }
+    n = run_generate_job(payload, dry_run=args.dry_run)
+    print(f"IPlant 완료: {n}장")
+    return 0
+
+
+def cmd_agent(args) -> int:
+    from .agent import agent_loop
+    try:
+        agent_loop(poll_sec=args.poll, dry_run=args.dry_run)
+    except KeyboardInterrupt:
+        print("agent stopped")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     # Windows cp949 콘솔에서도 상태 문자(—, →, ●)가 깨지지 않게
     for stream in (sys.stdout, sys.stderr):
@@ -333,6 +361,19 @@ def main(argv: list[str] | None = None) -> int:
     sv.add_argument("--strict", action="store_true", help="노드 오프라인이면 mock 폴백 없이 종료")
     sv.add_argument("--quality", action="store_true", help="ESRGAN 고화질 모드")
     sv.set_defaults(func=cmd_serve)
+
+    pl = sub.add_parser("plant", help="Lexi IPlant 가중 배치 생성 (websource/commerce/aimodel)")
+    pl.add_argument("--total", type=int, default=10, help="총 생성 장수")
+    pl.add_argument("--weights", default=None,
+                    help="websource:30,commerce:40,aimodel:30")
+    pl.add_argument("--out-root", default=None, help=r"default C:\cursor\ipplant")
+    pl.add_argument("--dry-run", action="store_true")
+    pl.set_defaults(func=cmd_plant)
+
+    ag = sub.add_parser("agent", help="IPlant agent — Neon/Vercel job 큐 폴링")
+    ag.add_argument("--poll", type=float, default=5.0)
+    ag.add_argument("--dry-run", action="store_true")
+    ag.set_defaults(func=cmd_agent)
 
     args = ap.parse_args(argv)
     return args.func(args)

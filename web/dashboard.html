@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lexi IPlant — Factory Console</title>
+<meta name="description" content="lexiipplant — lexi_ai/ipplant image factory. DB edit copyright steven8kay.">
+<style>
+:root{
+  --bg:#f3f1ec; --surface:#fff; --ink:#1a1a1a; --muted:#6b6b6b; --line:#e4e0d8;
+  --accent:#0f6e56; --accent2:#c45c26; --good:#1a7f4b; --bad:#b42318; --warn:#b54708;
+  --rail:64px; --sources:280px; --studio:320px;
+  --font:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --sans:"Segoe UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px}
+button,input,select{font:inherit}
+.app{display:grid;grid-template-columns:var(--rail) 1fr;height:100vh}
+.rail{background:#14211c;color:#d7e6df;display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:8px}
+.rail .brand{width:40px;height:40px;border-radius:12px;background:linear-gradient(145deg,#1f8f6e,#0b4f3c);display:grid;place-items:center;font-weight:700;letter-spacing:-.04em}
+.rail .ico{width:44px;height:44px;border-radius:12px;border:0;background:transparent;color:#9bb5aa;cursor:pointer}
+.rail .ico.active,.rail .ico:hover{background:#1c332a;color:#fff}
+.main{display:grid;grid-template-rows:52px 1fr;min-width:0}
+.top{display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid var(--line);background:var(--surface)}
+.top h1{font-family:var(--font);font-size:18px;font-weight:600}
+.top .meta{color:var(--muted);font-size:12px}
+.workspace{display:grid;grid-template-columns:var(--sources) minmax(0,1fr) var(--studio);min-height:0}
+.pane{border-right:1px solid var(--line);background:var(--surface);overflow:auto;min-height:0}
+.pane:last-child{border-right:0}
+.pane-h{padding:14px 16px;border-bottom:1px solid var(--line);font-weight:650;font-size:13px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.pane-b{padding:14px 16px}
+.card{background:#faf9f6;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}
+label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
+input[type=number],input[type=text],select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.btn{border:0;border-radius:10px;padding:9px 14px;cursor:pointer;background:var(--accent);color:#fff;font-weight:600}
+.btn.secondary{background:#ece8e1;color:var(--ink)}
+.btn.warn{background:var(--warn);color:#fff}
+.btn.danger{background:var(--bad);color:#fff}
+.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.kpi .card{text-align:center}
+.kpi b{display:block;font-size:22px;font-family:var(--font)}
+.feed{font-family:ui-monospace,Consolas,monospace;font-size:12px;line-height:1.45;white-space:pre-wrap;max-height:280px;overflow:auto;background:#111;color:#c6f6d5;padding:10px;border-radius:10px}
+.tree details{margin:4px 0}
+.tree summary{cursor:pointer;padding:6px 0;font-weight:600}
+.thumb-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.thumb{aspect-ratio:16/10;background:#ece8e1;border-radius:8px;overflow:hidden;display:grid;place-items:center;color:var(--muted);font-size:11px;border:1px solid var(--line)}
+.mono{font-family:ui-monospace,Consolas,monospace;font-size:11px;word-break:break-all}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#e7f4ef;color:var(--accent);font-size:11px;font-weight:650}
+@media (max-width:1100px){
+  .workspace{grid-template-columns:1fr}
+  .pane{border-right:0;border-bottom:1px solid var(--line);max-height:40vh}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="rail">
+    <div class="brand" title="Lexi IPlant">IP</div>
+    <button class="ico active" data-view="factory" title="Factory">F</button>
+    <button class="ico" data-view="explorer" title="Explorer">E</button>
+    <button class="ico" data-view="jobs" title="Jobs">J</button>
+    <button class="ico" data-view="settings" title="Settings">S</button>
+  </nav>
+  <div class="main">
+    <header class="top">
+      <h1>Lexi IPlant <span class="pill">lexiipplant</span></h1>
+      <div class="meta">by lexi_ai/ipplant · © steven8kay · <span id="health">…</span></div>
+    </header>
+    <div class="workspace" id="ws-factory">
+      <aside class="pane">
+        <div class="pane-h">Sources · Weights</div>
+        <div class="pane-b">
+          <div class="card">
+            <label>Total images (N)</label>
+            <input type="number" id="total" value="100" min="1">
+            <label style="margin-top:10px">AI goal preset</label>
+            <select id="goal">
+              <option value="commerce">commerce (default 30/40/30)</option>
+              <option value="websource">site / websource heavy</option>
+              <option value="aimodel">lookbook / aimodel heavy</option>
+              <option value="balanced">balanced</option>
+            </select>
+            <div class="row">
+              <button class="btn secondary" id="btn-recommend">AI recommend</button>
+            </div>
+          </div>
+          <div class="card">
+            <label>websource %</label><input type="number" id="w-websource" value="30">
+            <label style="margin-top:8px">commerce %</label><input type="number" id="w-commerce" value="40">
+            <label style="margin-top:8px">aimodel %</label><input type="number" id="w-aimodel" value="30">
+            <div class="row">
+              <button class="btn secondary" id="btn-preview-alloc">Preview quotas</button>
+            </div>
+            <pre class="mono" id="quotas" style="margin-top:8px;max-height:180px;overflow:auto"></pre>
+          </div>
+        </div>
+      </aside>
+      <section class="pane">
+        <div class="pane-h">Console · Factory</div>
+        <div class="pane-b">
+          <div class="kpi">
+            <div class="card"><span>Jobs pending</span><b id="k-pending">0</b></div>
+            <div class="card"><span>Assets</span><b id="k-assets">0</b></div>
+            <div class="card"><span>Agents</span><b id="k-agents">0</b></div>
+          </div>
+          <div class="row">
+            <button class="btn" id="btn-enqueue">Enqueue generate job</button>
+            <button class="btn secondary" id="btn-refresh">Refresh</button>
+          </div>
+          <div class="card">
+            <div class="pane-h" style="border:0;padding:0 0 8px">Live events</div>
+            <div class="feed" id="feed">waiting…</div>
+          </div>
+        </div>
+      </section>
+      <aside class="pane">
+        <div class="pane-h">Studio · Preview / Meta</div>
+        <div class="pane-b">
+          <div class="card">
+            <div class="pill">IPLANT line</div>
+            <p class="mono" id="studio-line" style="margin-top:8px">Select an asset</p>
+          </div>
+          <div class="card">
+            <div class="pane-h" style="border:0;padding:0 0 8px">Recent assets</div>
+            <div class="thumb-grid" id="thumbs"></div>
+          </div>
+          <div class="card">
+            <label>Share URL</label>
+            <input type="text" id="share-url" readonly placeholder="Drive/public link after sync">
+            <div class="row"><button class="btn secondary" id="btn-copy-share">Copy share link</button></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+    <div class="workspace" id="ws-explorer" style="display:none">
+      <aside class="pane" style="grid-column:1 / -1">
+        <div class="pane-h">Explorer · Category inventory</div>
+        <div class="pane-b">
+          <div class="tree" id="tree"></div>
+        </div>
+      </aside>
+    </div>
+    <div class="workspace" id="ws-jobs" style="display:none">
+      <aside class="pane" style="grid-column:1 / -1">
+        <div class="pane-h">Jobs</div>
+        <div class="pane-b"><pre class="mono" id="jobs-list"></pre></div>
+      </aside>
+    </div>
+    <div class="workspace" id="ws-settings" style="display:none">
+      <aside class="pane" style="grid-column:1 / -1">
+        <div class="pane-h">Settings</div>
+        <div class="pane-b">
+          <div class="card">
+            <p>Local root: <code>C:\cursor\ipplant</code></p>
+            <p>Drive folder: <code>My Drive/lpplant</code></p>
+            <p>API: same origin <code>/api/*</code> · Agent token via <code>IPLANT_AGENT_TOKEN</code></p>
+            <p>Copyright: steven8kay · Producer: lexi_ai/ipplant</p>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+<script>
+const API = '';
+async function j(path, opts){
+  const r = await fetch(API + path, opts);
+  const t = await r.text();
+  try { return JSON.parse(t); } catch { return { error: t, status: r.status }; }
+}
+function weights(){
+  return {
+    websource: +document.getElementById('w-websource').value || 0,
+    commerce: +document.getElementById('w-commerce').value || 0,
+    aimodel: +document.getElementById('w-aimodel').value || 0,
+  };
+}
+async function recommend(){
+  const goal = document.getElementById('goal').value;
+  const total = +document.getElementById('total').value || 100;
+  const data = await j('/api/weights', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ goal, total }) });
+  if (data.weights){
+    document.getElementById('w-websource').value = data.weights.websource;
+    document.getElementById('w-commerce').value = data.weights.commerce;
+    document.getElementById('w-aimodel').value = data.weights.aimodel;
+  }
+  showQuotas(data.quotas || []);
+}
+async function previewAlloc(){
+  const total = +document.getElementById('total').value || 100;
+  const data = await j('/api/weights', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ total, weights: weights() }) });
+  showQuotas(data.quotas || []);
+}
+function showQuotas(qs){
+  document.getElementById('quotas').textContent = (qs||[]).map(q => `${q.key}: ${q.count}`).join('\n') || '(empty)';
+}
+async function enqueue(){
+  const total = +document.getElementById('total').value || 100;
+  const payload = { total, weights: weights(), out_root: 'C:/cursor/ipplant' };
+  const data = await j('/api/jobs', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ action:'create', type:'generate', payload }) });
+  document.getElementById('feed').textContent += `\n+ job ${data.id || data.error}`;
+  refresh();
+}
+async function refresh(){
+  const [health, jobs, assets, agents, events] = await Promise.all([
+    j('/api/health'), j('/api/jobs'), j('/api/assets?limit=40'), j('/api/agents'), j('/api/events?limit=30')
+  ]);
+  document.getElementById('health').textContent = health.ok ? 'API ok' : ('API ' + (health.error||'down'));
+  const pending = (jobs.jobs||[]).filter(x => x.status==='pending').length;
+  document.getElementById('k-pending').textContent = pending;
+  document.getElementById('k-assets').textContent = (assets.assets||[]).length;
+  document.getElementById('k-agents').textContent = (agents.agents||[]).length;
+  document.getElementById('feed').textContent = (events.events||[]).map(e => `${e.created_at||''} [${e.kind}] ${e.message}`).join('\n') || 'no events';
+  document.getElementById('jobs-list').textContent = JSON.stringify(jobs.jobs||[], null, 2);
+  const thumbs = document.getElementById('thumbs');
+  thumbs.innerHTML = '';
+  (assets.assets||[]).slice(0,8).forEach(a => {
+    const d = document.createElement('div');
+    d.className = 'thumb';
+    d.textContent = `${a.category}.${a.subcategory}\n${a.id.slice(0,10)}`;
+    d.title = a.iplant_line || '';
+    d.onclick = () => {
+      document.getElementById('studio-line').textContent = a.iplant_line || a.id;
+      document.getElementById('share-url').value = a.share_url || '';
+    };
+    thumbs.appendChild(d);
+  });
+  // explorer tree
+  const by = {};
+  (assets.stats||[]).forEach(s => {
+    by[s.category] = by[s.category] || [];
+    by[s.category].push(s);
+  });
+  const tree = document.getElementById('tree');
+  tree.innerHTML = Object.keys(by).sort().map(cat => {
+    const rows = by[cat].map(s =>
+      `<div class="row"><span>${s.subcategory}: <b>${s.count}</b></span>
+       <button class="btn secondary" data-preview="${cat}.${s.subcategory}">Preview</button></div>`
+    ).join('');
+    const sum = by[cat].reduce((a,s)=>a+Number(s.count||0),0);
+    return `<details open><summary>${cat} (${sum})</summary>${rows}</details>`;
+  }).join('') || '<p class="meta">No indexed assets yet. Run local agent.</p>';
+  tree.querySelectorAll('[data-preview]').forEach(btn => {
+    btn.onclick = () => {
+      const [cat] = btn.dataset.preview.split('.');
+      const hit = (assets.assets||[]).find(a => a.category===cat);
+      if (hit) {
+        document.getElementById('studio-line').textContent = hit.iplant_line || hit.id;
+        document.getElementById('share-url').value = hit.share_url || '';
+        document.querySelector('.ico[data-view=factory]').click();
+      }
+    };
+  });
+}
+document.querySelectorAll('.rail .ico').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.rail .ico').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  ['factory','explorer','jobs','settings'].forEach(v => {
+    document.getElementById('ws-'+v).style.display = (b.dataset.view===v) ? 'grid' : 'none';
+  });
+});
+document.getElementById('btn-recommend').onclick = recommend;
+document.getElementById('btn-preview-alloc').onclick = previewAlloc;
+document.getElementById('btn-enqueue').onclick = enqueue;
+document.getElementById('btn-refresh').onclick = refresh;
+document.getElementById('btn-copy-share').onclick = async () => {
+  const v = document.getElementById('share-url').value;
+  if (v) await navigator.clipboard.writeText(v);
+};
+recommend();
+refresh();
+setInterval(refresh, 8000);
+</script>
+</body>
+</html>

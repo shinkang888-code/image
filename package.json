@@ -1,0 +1,9 @@
+{
+  "name": "lexiipplant",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Lexi IPlant — image factory web console (Neon + Vercel)",
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4"
+  }
+}

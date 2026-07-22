@@ -1,0 +1,13 @@
+lip/
+tests/
+out/
+demo/
+workflows/
+prompts/
+scripts/
+*.pyc
+__pycache__/
+.pytest_cache/
+PLAN.md
+*.toml
+requirements.txt
