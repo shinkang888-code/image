@@ -20,6 +20,7 @@ class OutputSpec:
     webp_method: int = 6        # 0(빠름)~6(최소용량). 공장은 용량 우선
     jpg_quality: int = 82
     jpg_progressive: bool = True
+    avif_quality: int = 55      # 실측 1600x900: WebP q80 대비 약 70% 용량
 
 
 @dataclass(frozen=True)
@@ -42,14 +43,20 @@ def cover_resize(img: Image.Image, target: tuple[int, int] = FHD) -> Image.Image
     return resized.crop((left, top, left + tw, top + th))
 
 
-def _encode(img: Image.Image, fmt: str, spec: OutputSpec) -> EncodedImage:
+def _encode(img: Image.Image, fmt: str, spec: OutputSpec,
+            xmp: bytes | None = None) -> EncodedImage:
     buf = io.BytesIO()
+    # XMP 는 인코딩 인자로 넘긴다 — 컨테이너 재삽입도 재인코딩도 없어 비용 0.
+    meta = {"xmp": xmp} if xmp else {}
     if fmt == "webp":
-        img.save(buf, format="WEBP", quality=spec.webp_quality, method=spec.webp_method)
+        img.save(buf, format="WEBP", quality=spec.webp_quality,
+                 method=spec.webp_method, **meta)
+    elif fmt == "avif":
+        img.save(buf, format="AVIF", quality=spec.avif_quality, **meta)
     elif fmt == "jpg":
         img.convert("RGB").save(
             buf, format="JPEG", quality=spec.jpg_quality,
-            progressive=spec.jpg_progressive, optimize=True,
+            progressive=spec.jpg_progressive, optimize=True, **meta,
         )
     else:
         raise ValueError(f"unsupported format: {fmt}")
@@ -61,10 +68,14 @@ def optimize(
     raw: bytes | Image.Image,
     spec: OutputSpec | None = None,
     formats: tuple[str, ...] = ("webp", "jpg"),
+    xmp: bytes | None = None,
 ) -> list[EncodedImage]:
-    """raw 이미지(bytes 또는 PIL) → FHD cover-crop → 지정 포맷들로 인코딩."""
+    """raw 이미지(bytes 또는 PIL) → cover-crop → 지정 포맷들로 인코딩.
+
+    xmp 를 주면 모든 포맷에 같은 패킷이 실린다(권리·이력 메타, 명세 §5.1).
+    """
     spec = spec or OutputSpec()
     img = raw if isinstance(raw, Image.Image) else Image.open(io.BytesIO(raw))
     img = img.convert("RGB")
     fhd = cover_resize(img, spec.target)
-    return [_encode(fhd, fmt, spec) for fmt in formats]
+    return [_encode(fhd, fmt, spec, xmp) for fmt in formats]
