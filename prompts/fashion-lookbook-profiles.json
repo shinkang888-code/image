@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "campaign": "fashion-lookbook-1000",
+  "totals": { "all": 1000, "female": 550, "male": 450, "kr": 600, "other": 400 },
+  "filename": "lex_aimodel-{g}-{nat}-{age}-{concept}-{crop}-{outfit}-{pid}-{seed}.{ext}",
+  "quality_suffix": "photorealistic editorial fashion photography, natural skin texture, sharp eyes, professional studio lighting quality, 8k, commercial lookbook",
+  "negative": "lowres, blurry, jpeg artifacts, watermark, text, signature, logo, brand name, extra fingers, malformed hands, deformed face, asymmetrical eyes, plastic skin, mannequin, cartoon, cgi, oversmoothed, child, teen, underage",
+  "profiles": [
+    { "id": "F-KR-20A", "g": "f", "nat": "kr", "age": "20s", "gender_word": "Korean woman", "look": "straight black bob haircut, light warm skin, soft jawline, natural makeup" },
+    { "id": "F-KR-20B", "g": "f", "nat": "kr", "age": "20s", "gender_word": "Korean woman", "look": "long wavy brown hair, fair skin, round eyes, soft smile" },
+    { "id": "F-KR-30A", "g": "f", "nat": "kr", "age": "30s", "gender_word": "Korean woman", "look": "shoulder-length black hair, refined makeup, elegant features" },
+    { "id": "F-KR-30B", "g": "f", "nat": "kr", "age": "30s", "gender_word": "Korean woman", "look": "low bun hairstyle, cool undertone, sharp brows" },
+    { "id": "F-KR-40A", "g": "f", "nat": "kr", "age": "40s", "gender_word": "Korean woman", "look": "elegant short haircut, natural mature beauty, subtle gray hint" },
+    { "id": "M-KR-20A", "g": "m", "nat": "kr", "age": "20s", "gender_word": "Korean man", "look": "short textured black hair, athletic build, clean youthful face" },
+    { "id": "M-KR-30A", "g": "m", "nat": "kr", "age": "30s", "gender_word": "Korean man", "look": "neat side part, clean shaven, professional look" },
+    { "id": "M-KR-30B", "g": "m", "nat": "kr", "age": "30s", "gender_word": "Korean man", "look": "soft undercut, light stubble, casual confidence" },
+    { "id": "M-KR-40A", "g": "m", "nat": "kr", "age": "40s", "gender_word": "Korean man", "look": "mature salt-and-pepper hair, tailored presence" },
+    { "id": "F-JP-20A", "g": "f", "nat": "jp", "age": "20s", "gender_word": "Japanese woman", "look": "straight bangs, porcelain skin, delicate features" },
+    { "id": "F-CN-20A", "g": "f", "nat": "cn", "age": "20s", "gender_word": "Chinese woman", "look": "long straight black hair, soft contour, luminous skin" },
+    { "id": "F-SEA-20A", "g": "f", "nat": "sea", "age": "20s", "gender_word": "Southeast Asian woman", "look": "warm medium skin tone, dark wavy hair, bright eyes" },
+    { "id": "M-SEA-30A", "g": "m", "nat": "sea", "age": "30s", "gender_word": "Southeast Asian man", "look": "warm brown skin, short fade haircut" },
+    { "id": "F-SA-20A", "g": "f", "nat": "sa", "age": "20s", "gender_word": "South Asian woman", "look": "deep warm skin, long dark curls, strong brows" },
+    { "id": "F-EU-20A", "g": "f", "nat": "eu", "age": "20s", "gender_word": "European woman", "look": "blonde waves, fair freckled skin, blue-gray eyes" },
+    { "id": "M-EU-30A", "g": "m", "nat": "eu", "age": "30s", "gender_word": "European man", "look": "light brown hair, light stubble, angular jaw" },
+    { "id": "F-AF-20A", "g": "f", "nat": "af", "age": "20s", "gender_word": "Black woman", "look": "deep rich skin, natural afro coils, high cheekbones" },
+    { "id": "M-AF-30A", "g": "m", "nat": "af", "age": "30s", "gender_word": "Black man", "look": "deep skin tone, short cropped hair, strong features" },
+    { "id": "F-LAT-20A", "g": "f", "nat": "lat", "age": "20s", "gender_word": "Latina woman", "look": "olive skin, long dark waves, warm brown eyes" },
+    { "id": "M-LAT-30A", "g": "m", "nat": "lat", "age": "30s", "gender_word": "Latino man", "look": "olive skin, dark curly hair, trimmed beard" }
+  ],
+  "concepts": {
+    "studio": "against a seamless neutral gray studio backdrop, soft key light and gentle fill",
+    "street": "on a sunlit urban street with shallow depth of field bokeh",
+    "cafe": "in a bright minimal cafe with warm wood and soft window light",
+    "office": "in a modern office lobby with glass and soft daylight",
+    "outer": "outdoors on an overcast autumn street, coat focus",
+    "resort": "at a bright resort terrace with soft sea breeze atmosphere",
+    "night": "evening city lights bokeh, refined night-out mood",
+    "beauty": "beauty close-up framing, clean beauty lighting",
+    "wear": "product-wear focus, garment texture clearly visible"
+  },
+  "crops": {
+    "full": "full body standing pose, head to toe in frame",
+    "half": "waist-up portrait crop, face clearly visible",
+    "detail": "three-quarter crop emphasizing the outfit"
+  },
+  "sample5": [
+    { "profile": "F-KR-20A", "concept": "studio", "crop": "full", "outfit": "beige linen blazer over white tee and tailored trousers", "outfit_slug": "linen-blazer", "seed": 10001 },
+    { "profile": "M-KR-30A", "concept": "office", "crop": "half", "outfit": "charcoal suit jacket over open-collar white shirt", "outfit_slug": "charcoal-suit", "seed": 10002 },
+    { "profile": "F-SEA-20A", "concept": "resort", "crop": "full", "outfit": "white linen midi dress", "outfit_slug": "linen-dress", "seed": 10003 },
+    { "profile": "M-EU-30A", "concept": "street", "crop": "full", "outfit": "blue denim jacket over black tee and slim jeans", "outfit_slug": "denim-jacket", "seed": 10004 },
+    { "profile": "F-AF-20A", "concept": "beauty", "crop": "half", "outfit": "fitted black turtleneck", "outfit_slug": "black-turtleneck", "seed": 10005 }
+  ]
+}
