@@ -21,13 +21,12 @@ python -m lip plant --total 1000 --weights websource:30,commerce:40,aimodel:30
 IPLANT 메타 라인 예:
 `IPLANT;v1;cat=commerce.pdp;pid=…;by=lexi_ai/ipplant;c=steven8kay;lic=db-edit;use=pdp`
 
-## 웹 대시보드 (NotebookLM 3단)
+## 웹 갤러리 / 대시보드
+공개 URL: https://ipcow.vercel.app (썸네일 갤러리) · https://ipcow.vercel.app/dashboard (공장 콘솔)
+
 ```powershell
+python scripts/build_gallery.py   # C:\cursor\ipplant\library → web/library
 npm install
-# DATABASE_URL 설정 후 스키마 적용
-psql $env:DATABASE_URL -f sql/001_iplant.sql
-vercel dev   # http://localhost:3000 → /dashboard
-# 또는
 vercel --prod --yes
 ```
 

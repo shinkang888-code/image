@@ -5,9 +5,10 @@
   "outputDirectory": "web",
   "installCommand": "npm install",
   "rewrites": [
+    { "source": "/gallery", "destination": "/gallery.html" },
     { "source": "/dashboard", "destination": "/dashboard.html" },
     { "source": "/dashboard/(.*)", "destination": "/dashboard.html" },
-    { "source": "/", "destination": "/dashboard.html" }
+    { "source": "/", "destination": "/gallery.html" }
   ],
   "headers": [
     {

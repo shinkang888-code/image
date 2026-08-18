@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lexi IPlant — Gallery</title>
+<meta name="description" content="lexiipplant thumbnail gallery. Producer lexi_ai/ipplant. Copyright steven8kay.">
+<style>
+:root{
+  --bg:#f3f1ec; --surface:#fff; --ink:#1a1a1a; --muted:#6b6b6b; --line:#e4e0d8;
+  --accent:#0f6e56; --rail:64px;
+  --font:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --sans:"Segoe UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px}
+button,input,select{font:inherit}
+.app{display:grid;grid-template-columns:var(--rail) 1fr;min-height:100vh}
+.rail{background:#14211c;color:#d7e6df;display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:8px;position:sticky;top:0;height:100vh}
+.rail .brand{width:40px;height:40px;border-radius:12px;background:linear-gradient(145deg,#1f8f6e,#0b4f3c);display:grid;place-items:center;font-weight:700;color:#fff;text-decoration:none}
+.rail a.ico{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;color:#9bb5aa;text-decoration:none;font-weight:700}
+.rail a.ico.active,.rail a.ico:hover{background:#1c332a;color:#fff}
+.main{min-width:0}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line);background:var(--surface);position:sticky;top:0;z-index:5;flex-wrap:wrap}
+.top h1{font-family:var(--font);font-size:18px;font-weight:600}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#e7f4ef;color:var(--accent);font-size:11px;font-weight:650}
+.meta{color:var(--muted);font-size:12px}
+.filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 18px;border-bottom:1px solid var(--line);background:#faf9f6}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;cursor:pointer;color:var(--ink)}
+.chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.search{min-width:180px;flex:1;max-width:320px;padding:8px 10px;border:1px solid var(--line);border-radius:8px}
+select{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;padding:16px 18px 48px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column}
+.card:hover{box-shadow:0 6px 18px rgba(20,33,28,.08)}
+.thumb{aspect-ratio:4/3;background:#ece8e1;overflow:hidden}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.cap{padding:8px 10px 10px}
+.cap b{display:block;font-size:12px;font-weight:650;line-height:1.3;max-height:2.6em;overflow:hidden}
+.cap span{color:var(--muted);font-size:11px}
+.empty{padding:48px 18px;color:var(--muted);text-align:center}
+.lb{position:fixed;inset:0;background:rgba(10,16,14,.88);display:none;place-items:center;z-index:20;padding:24px}
+.lb.open{display:grid}
+.lb img{max-width:min(96vw,1200px);max-height:82vh;object-fit:contain;border-radius:8px;background:#111}
+.lb .meta{color:#d7e6df;margin-top:10px;text-align:center}
+.lb .x,.lb .nav{position:absolute;border:0;background:#1c332a;color:#fff;width:44px;height:44px;border-radius:12px;cursor:pointer;font-size:20px}
+.lb .x{top:16px;right:16px}
+.lb .prev{left:16px;top:50%}
+.lb .next{right:16px;top:50%}
+@media (max-width:720px){
+  .app{grid-template-columns:1fr}
+  .rail{flex-direction:row;height:auto;width:100%;position:sticky;top:0;z-index:6;padding:8px;justify-content:flex-start}
+  .grid{grid-template-columns:repeat(2,1fr);padding:12px;gap:8px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="rail">
+    <a class="brand" href="/gallery" title="Lexi IPlant">IP</a>
+    <a class="ico active" href="/gallery" title="Gallery">G</a>
+    <a class="ico" href="/dashboard" title="Factory">F</a>
+  </nav>
+  <div class="main">
+    <header class="top">
+      <h1>Gallery <span class="pill">lexiipplant</span></h1>
+      <div class="meta" id="count">불러오는 중…</div>
+    </header>
+    <div class="filters">
+      <button class="chip active" data-cat="">전체</button>
+      <button class="chip" data-cat="websource">websource</button>
+      <button class="chip" data-cat="commerce">commerce</button>
+      <button class="chip" data-cat="aimodel">aimodel</button>
+      <select id="sub"></select>
+      <input class="search" id="q" type="search" placeholder="검색 (제목·태그)">
+    </div>
+    <div class="grid" id="grid"></div>
+    <p class="empty" id="empty" hidden>해당하는 이미지가 없습니다.</p>
+  </div>
+</div>
+<div class="lb" id="lb" role="dialog" aria-modal="true">
+  <button class="x" id="lb-x" aria-label="닫기">×</button>
+  <button class="nav prev" id="lb-prev" aria-label="이전">‹</button>
+  <div>
+    <img id="lb-img" alt="">
+    <div class="meta" id="lb-cap"></div>
+  </div>
+  <button class="nav next" id="lb-next" aria-label="다음">›</button>
+</div>
+<script>
+let ITEMS = [];
+let VIEW = [];
+let idx = 0;
+const grid = document.getElementById('grid');
+const empty = document.getElementById('empty');
+const subSel = document.getElementById('sub');
+const qEl = document.getElementById('q');
+let cat = '';
+
+function subsOf(c){
+  const s = new Set();
+  ITEMS.forEach(it => { if (!c || it.category===c) s.add(it.subcategory); });
+  return [...s].sort();
+}
+function fillSubs(){
+  const cur = subSel.value;
+  subSel.innerHTML = '<option value="">모든 세부</option>' + subsOf(cat).map(s => `<option>${s}</option>`).join('');
+  if ([...subSel.options].some(o => o.value===cur)) subSel.value = cur;
+}
+function apply(){
+  const sub = subSel.value;
+  const q = (qEl.value||'').trim().toLowerCase();
+  VIEW = ITEMS.filter(it => {
+    if (cat && it.category!==cat) return false;
+    if (sub && it.subcategory!==sub) return false;
+    if (q && !(`${it.title} ${it.category} ${it.subcategory} ${it.id}`).toLowerCase().includes(q)) return false;
+    return true;
+  });
+  document.getElementById('count').textContent = `${VIEW.length} / ${ITEMS.length} · © steven8kay`;
+  grid.innerHTML = VIEW.map((it,i) => `
+    <article class="card" data-i="${i}">
+      <div class="thumb"><img loading="lazy" decoding="async" src="${it.src}" alt="${it.title}"></div>
+      <div class="cap"><b>${it.title}</b><span>${it.category} / ${it.subcategory}</span></div>
+    </article>`).join('');
+  empty.hidden = VIEW.length>0;
+  grid.querySelectorAll('.card').forEach(el => {
+    el.onclick = () => openLb(+el.dataset.i);
+  });
+}
+function openLb(i){
+  idx = i;
+  const it = VIEW[idx];
+  if (!it) return;
+  document.getElementById('lb-img').src = it.src;
+  document.getElementById('lb-img').alt = it.title;
+  document.getElementById('lb-cap').textContent = `${it.title} · ${it.category}/${it.subcategory}`;
+  document.getElementById('lb').classList.add('open');
+}
+function closeLb(){ document.getElementById('lb').classList.remove('open'); }
+function step(d){ if (!VIEW.length) return; openLb((idx+d+VIEW.length)%VIEW.length); }
+
+document.querySelectorAll('.chip').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  cat = b.dataset.cat;
+  fillSubs();
+  apply();
+});
+subSel.onchange = apply;
+qEl.oninput = apply;
+document.getElementById('lb-x').onclick = closeLb;
+document.getElementById('lb-prev').onclick = () => step(-1);
+document.getElementById('lb-next').onclick = () => step(1);
+document.getElementById('lb').addEventListener('click', e => { if (e.target.id==='lb') closeLb(); });
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('lb').classList.contains('open')) return;
+  if (e.key==='Escape') closeLb();
+  if (e.key==='ArrowLeft') step(-1);
+  if (e.key==='ArrowRight') step(1);
+});
+
+fetch('/gallery-index.json').then(r => r.json()).then(data => {
+  ITEMS = data.items || [];
+  fillSubs();
+  apply();
+}).catch(() => {
+  document.getElementById('count').textContent = '인덱스를 불러오지 못했습니다.';
+});
+</script>
+</body>
+</html>

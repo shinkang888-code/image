@@ -1,4 +1,5 @@
 out/
+web/library/
 lip.toml
 __pycache__/
 *.pyc

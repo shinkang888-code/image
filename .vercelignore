@@ -1,3 +1,7 @@
+# Keep gitignored WebP in the deployment
+!web/library/**
+!web/library/**/*.webp
+
 lip/
 tests/
 out/
